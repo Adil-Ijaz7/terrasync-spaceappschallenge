@@ -116,3 +116,329 @@ Main aapke sath step-by-step code karne ke liye tayyar hu taake aap par bilkul l
 Step 1: Pehle app/api/analyze/route.ts ka coordinate bug theek karein aur Map zoom/fly-to ko dynamic banayein.
 Step 2: Forensic Case Files Dossier widget add karein taake 1 click par pre-loaded crime scenes load hon.
 Step 3: 7-Day Interactive Crime Scene Timeline slider implement karein.
+
+
+
+new
+
+
+ROOT MOISTURE (GWETPROF) — NASA Profile Soil Moisture (0–100%)
+
+  
+
+  
+Kahan se aata hai: Yeh NASA POWER API ka GWETPROF (Groundwater Wetness Profile) parameter hai.
+
+  
+Yeh kya represent karta hai: Ground thermometers aur aam mausam reports sirf hawa ki humidity batati hain. Lekin fasal ke liye asal cheez Zameen ke andar root-zone (root depth ~1 meter) mein mojood paani hota hai.
+
+  
+Agro-Climatic Zones:
+  
+  
+
+  
+>
+25
+%
+>25% (Optimal / Safe): Zameen mein munasib nami mojood hai, fasal sukhoon se paani pee sakti hai.
+
+  
+15
+%
+−
+25
+%
+15%−25% (Warning / Stress): Evaporation tez ho rahi hai, zameen dry ho rahi hai.
+
+  
+≤
+13.5
+%
+≤13.5% (CRITICAL BREACH): Paani is hadd tak gir chuka hai ke poday ki jadein zameen se paani nahi kheench paati.
+
+  
+
+  
+② COUNTDOWN TO PWP — Days to Permanent Wilting Point
+
+  
+
+  
+Scientific Concept (Permanent Wilting Point - PWP): Agronomy mein PWP wo aakhri biological limit hai jahan poday ke andar ka hydrostatic pressure khatam ho jata hai aur fasal hamesha ke liye sookh (wilt) kar mar jaati hai.
+
+  
+Countdown ka matlab: Yeh wo waqt (din) hai jo kisan ke paas bacha hai is hadd tak pohnchne se pehle.
+  
+  
+
+  
+Agar drying rate tez ho aur Countdown 
+≤
+3
+≤3 Din ho, toh alert dispatch hota hai taake kisan fasal marne se pehle emergency irrigation (paani) laga le!
+
+  
+
+  
+③ NASA 2M SURFACE TEMP (T2M) — Orbital Surface Temperature
+
+  
+
+  
+Yeh kya hai: NASA ke MERRA-2 assimilation model se 2-meter air temperature (°C).
+
+  
+Forensic Detective Angle: Jab hawa ka temperature normal lage (e.g. 27°C - 34°C), lekin zameen ke andar moisture crash kar rahi ho — is phenomena ko "Thermal-Hydrological Decoupling" kehte hain. NASA satellite is chori ko pakad leti hai!
+
+  
+2. 🤖 Isme Machine Learning (ML) Kese Kaam Karti Hai?
+
+Aapka model sirf live numbers nahi dikhata, balki pichlay 7 din ki historical NASA telemetry se trend seekhta hai (learns from time-series).
+
+[Day -6] ➔ [Day -5] ➔ [Day -4] ➔ [Day -2] ➔ [Day 0 (Today)]
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+    Ordinary Least Squares (OLS) Linear Regression
+             │
+             ├──► Drying Velocity:   dM/dt (% moisture loss per day)
+             ├──► Thermal Velocity:  dT/dt (°C rise per day)
+             └──► Goodness of Fit:   R² (Model Confidence 88% - 98%)
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+   [Predict next 3-7 Days] ➔ [Calculate Days to PWP] ➔ [Trigger Autonomous Email]
+Under-the-Hood Math (Jo aap judges ko bata saktay hain):
+
+  
+
+  
+Time-Series Sequence: Model pichlay 7 din ka data vector leta hai:
+
+𝐷
+=
+{
+(
+𝑡
+𝑖
+,
+𝑇
+𝑖
+,
+𝑀
+𝑖
+)
+}
+𝑖
+=
+−
+7
+0
+D={(t
+i
+	​
+
+,T
+i
+	​
+
+,M
+i
+	​
+
+)}
+i=−7
+0
+	​
+
+
+  
+Drying Velocity (
+𝑑
+𝑀
+𝑑
+𝑡
+dt
+dM
+	​
+
+):
+OLS regression ke zariye slope calculate hota hai:
+
+𝑑
+𝑀
+𝑑
+𝑡
+=
+∑
+(
+𝑡
+𝑖
+−
+𝑡
+ˉ
+)
+(
+𝑀
+𝑖
+−
+𝑀
+ˉ
+)
+∑
+(
+𝑡
+𝑖
+−
+𝑡
+ˉ
+)
+2
+dt
+dM
+	​
+
+=
+∑(t
+i
+	​
+
+−
+t
+ˉ
+)
+2
+∑(t
+i
+	​
+
+−
+t
+ˉ
+)(M
+i
+	​
+
+−
+M
+ˉ
+)
+	​
+
+
+  
+Countdown Equation:
+
+Days to PWP
+=
+Current Moisture
+−
+PWP Limit (13.5%)
+∣
+𝑑
+𝑀
+𝑑
+𝑡
+∣
+Days to PWP=
+∣
+dt
+dM
+	​
+
+∣
+Current Moisture−PWP Limit (13.5%)
+	​
+
+
+  
+Model Confidence (
+𝑅
+2
+R
+2
+):
+
+𝑅
+2
+=
+1
+−
+𝑆
+𝑆
+residual
+𝑆
+𝑆
+total
+R
+2
+=1−
+SS
+total
+	​
+
+SS
+residual
+	​
+
+	​
+
+
+Jo Card 3 ke circular arc gauge par 94% ML Confidence dikhata hai!
+
+  
+3. 🛰️ Aur Konsi NASA APIs Ya Datasets Hain Jo Isme Implement Ho Sakti Hain?
+
+NASA Space Apps Challenge mein judges in datasets ka sun kar bohat impress hotay hain:
+
+NASA Source	Data Type	Aapke Project Mein Kahan Use Hoga?
+1. NASA GIBS (Global Imagery Browse Services)	Live WMTS Satellite Imagery Layers	Real MODIS, VIIRS, aur True-Color satellite tiles seedha aapke map par overlay ke tor par dikhana!
+2. NASA SMAP (Soil Moisture Active Passive)	9km / 3km L-band Microwave Radiometer	Zameen ki top-layer moisture ka official NASA dedicated satellite sensor.
+3. NASA HLS (Harmonized Landsat & Sentinel-2)	Multi-spectral Surface Reflectance	NDVI (Normalized Difference Vegetation Index) calculate karna: Fasal ka greenness index 
+𝑁
+𝐷
+𝑉
+𝐼
+=
+𝑁
+𝐼
+𝑅
+−
+𝑅
+𝑒
+𝑑
+𝑁
+𝐼
+𝑅
++
+𝑅
+𝑒
+𝑑
+NDVI=
+NIR+Red
+NIR−Red
+	​
+
+.
+4. NASA FIRMS (Fire Information for Resource Management)	Thermal Anomalies & Active Fire Hotspots	Sindh aur Punjab mein fasal ki baqiyaat jalane (stubble burning) ya extreme heat hotspots ko map par live point out karna.
+5. NASA EONET v3 (Earth Observatory Natural Event Tracker)	Live Natural Hazards API	(Already integrated) Dadu ke aas paas flood, heavy storms aur tropical cyclones track karne ke liye.
+💡 Hackathon Presentation Tip (Judges ko kya bolna hai):
+
+  
+
+"Judges, a ground thermometer only tracks ambient air — it is completely blind to what is happening beneath the soil. TerraSync acts as Earth's True Detective by leveraging NASA POWER orbital agroclimatology. Our Time-Series Regression Engine calculates the daily moisture depletion rate (
+𝑑
+𝑀
+𝑑
+𝑡
+dt
+dM
+	​
+
+) and predicts the exact countdown to Permanent Wilting Point 72 hours before visible crop death, automatically dispatching native Sindhi and Urdu alerts to farmers."
+
+
+  
+
+Maine code mein dynamic badges update karke push kar diye hain taake numbers ke hisaab se OPTIMAL, WARNING, aur BREACH auto-adjust ho jayein!

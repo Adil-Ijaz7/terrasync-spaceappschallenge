@@ -78,15 +78,22 @@ export default function EarthDetectiveDashboard() {
   const [newFarmEmail, setNewFarmEmail] = useState('');
   const [newFarmCrop, setNewFarmCrop] = useState('Rice');
 
-  // Load registered farms
-  useEffect(() => {
-    fetch('/api/farms')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.farms) setFarms(data.farms);
-      })
-      .catch((err) => console.warn('Could not fetch farms:', err));
+  // Load registered farms from API (fresh without caching)
+  const loadFarms = useCallback(async () => {
+    try {
+      const res = await fetch('/api/farms', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.farms && Array.isArray(data.farms)) {
+        setFarms(data.farms);
+      }
+    } catch (err) {
+      console.warn('Could not fetch farms:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFarms();
+  }, [loadFarms]);
 
   // Fetch live NASA telemetry & agronomic advice
   const triggerAnalysis = useCallback(async (lat: number, lng: number, cropName: string = 'rice') => {
@@ -278,10 +285,7 @@ export default function EarthDetectiveDashboard() {
         }),
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data.farm) {
-          setFarms((prev) => [data.farm, ...prev]);
-        }
+        await loadFarms();
         setShowAddFarmModal(false);
         setNewFarmName('');
         setNewFarmEmail('');
@@ -339,9 +343,14 @@ export default function EarthDetectiveDashboard() {
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
-          {/* District Filter Pill */}
-          <div className="hidden sm:flex items-center h-10 px-3.5 bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-2xs text-xs font-medium text-slate-700">
-            <span>District: Dadu, Sindh</span>
+          {/* Dynamic District / Sector Pill based on map click */}
+          <div className="hidden sm:flex items-center h-10 px-3.5 bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-800">
+            <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 shrink-0 animate-pulse"></span>
+            <span>
+              {selectedSectorName.startsWith('Target')
+                ? selectedSectorName
+                : `District Dadu (${selectedSectorName})`}
+            </span>
           </div>
 
           {/* Quick Preset Sector Chips */}

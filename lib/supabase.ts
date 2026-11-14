@@ -94,6 +94,50 @@ const DEFAULT_FARMS: FarmRecord[] = [
 let memoryFarms: FarmRecord[] = [...DEFAULT_FARMS];
 let memoryAlerts: AlertRecord[] = [];
 
+// Safe file-backed persistence for local / non-Supabase mode
+function getPersistentFarms(): FarmRecord[] {
+  if (typeof window === 'undefined') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'lib', 'farms-storage.json');
+      if (fs.existsSync(filePath)) {
+        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        if (Array.isArray(data) && data.length > 0) return data;
+      } else {
+        fs.writeFileSync(filePath, JSON.stringify(DEFAULT_FARMS, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      // fallback to memoryFarms
+    }
+  }
+  return memoryFarms;
+}
+
+function savePersistentFarm(newFarm: FarmRecord) {
+  memoryFarms.unshift(newFarm);
+  if (typeof window === 'undefined') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'lib', 'farms-storage.json');
+      let current: FarmRecord[] = [];
+      if (fs.existsSync(filePath)) {
+        current = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      } else {
+        current = [...DEFAULT_FARMS];
+      }
+      // Avoid duplicate by id
+      if (!current.some((f) => f.id === newFarm.id)) {
+        current.unshift(newFarm);
+      }
+      fs.writeFileSync(filePath, JSON.stringify(current, null, 2), 'utf-8');
+    } catch (e) {
+      console.warn('Could not persist farm to disk:', e);
+    }
+  }
+}
+
 export async function fetchFarms(): Promise<FarmRecord[]> {
   if (supabase) {
     try {
@@ -117,7 +161,7 @@ export async function fetchFarms(): Promise<FarmRecord[]> {
       console.warn('Error fetching farms from Supabase, using local fallback:', e);
     }
   }
-  return memoryFarms;
+  return getPersistentFarms();
 }
 
 export async function createFarm(farm: Omit<FarmRecord, 'id' | 'created_at'>): Promise<FarmRecord> {
@@ -136,7 +180,7 @@ export async function createFarm(farm: Omit<FarmRecord, 'id' | 'created_at'>): P
     }
   }
 
-  memoryFarms.unshift(newFarm);
+  savePersistentFarm(newFarm);
   return newFarm;
 }
 

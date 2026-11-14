@@ -1,0 +1,62 @@
+[
+  {
+    "farmer_name": "Adil Ijaz",
+    "email": "adilijaz227@gmail.com",
+    "latitude": 26.6956,
+    "longitude": 67.7012,
+    "region": "Dadu Central",
+    "crop_type": "Rice (Basmati)",
+    "id": "farm-c7uwl5q",
+    "created_at": "2026-11-14T18:09:59.214Z"
+  },
+  {
+    "id": "f1-dadu-001",
+    "farmer_name": "Ghulam Rasool Brohi",
+    "email": "ghulam.rasool.brohi@sindhfarms.pk",
+    "latitude": 26.7341,
+    "longitude": 67.7795,
+    "region": "Dadu City Rice Belt",
+    "crop_type": "Rice (Basmati)",
+    "created_at": "2026-11-14T18:02:42.646Z"
+  },
+  {
+    "id": "f2-johi-002",
+    "farmer_name": "Allah Dino Chandio",
+    "email": "allah.dino.chandio@daduagriculture.org",
+    "latitude": 26.6917,
+    "longitude": 67.6167,
+    "region": "Johi Irrigation Corridor",
+    "crop_type": "Rice (IRRI-6)",
+    "created_at": "2026-11-14T18:02:42.646Z"
+  },
+  {
+    "id": "f3-mehar-003",
+    "farmer_name": "Muhammad Bakhtiar Solangi",
+    "email": "solangi.farms.mehar@gmail.com",
+    "latitude": 27.1806,
+    "longitude": 67.8222,
+    "region": "Mehar Agricultural Hub",
+    "crop_type": "Wheat",
+    "created_at": "2026-11-14T18:02:42.646Z"
+  },
+  {
+    "id": "f4-sehwan-004",
+    "farmer_name": "Liaquat Ali Panhwar",
+    "email": "liaquat.panhwar@sehwanagri.com",
+    "latitude": 26.4256,
+    "longitude": 67.8631,
+    "region": "Sehwan Indus Basin",
+    "crop_type": "Cotton / Rice",
+    "created_at": "2026-11-14T18:02:42.646Z"
+  },
+  {
+    "id": "f5-knshah-005",
+    "farmer_name": "Gulzar Ahmad Magsi",
+    "email": "gulzar.magsi@knshahfarms.pk",
+    "latitude": 27.0911,
+    "longitude": 67.7333,
+    "region": "Khairpur Nathan Shah",
+    "crop_type": "Wheat",
+    "created_at": "2026-11-14T18:02:42.646Z"
+  }
+]
