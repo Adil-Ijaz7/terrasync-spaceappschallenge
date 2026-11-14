@@ -390,7 +390,9 @@ export default function EarthDetectiveDashboard() {
             <div className="pr-4 sm:pr-5 text-center">
               <div className="flex items-center justify-center gap-1">
                 <span className="text-base sm:text-xl font-bold tracking-tight text-amber-400">
-                  {prediction.predictedDaysToPWP.toFixed(1)} D
+                  {prediction.predictedDaysToPWP > 14
+                    ? '> 14 D'
+                    : `${prediction.predictedDaysToPWP.toFixed(1)} D`}
                 </span>
               </div>
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium whitespace-nowrap mt-0.5">
@@ -404,9 +406,19 @@ export default function EarthDetectiveDashboard() {
                 <span className="text-base sm:text-xl font-bold tracking-tight text-white">
                   {telemetry?.power.soilMoisturePercent ?? 14}%
                 </span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  BREACH
-                </span>
+                {(telemetry?.power.soilMoisturePercent ?? 14) <= 15 ? (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    BREACH
+                  </span>
+                ) : (telemetry?.power.soilMoisturePercent ?? 14) <= 25 ? (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    WARNING
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    OPTIMAL
+                  </span>
+                )}
               </div>
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium whitespace-nowrap mt-0.5">
                 Root Moisture (GWETPROF)
@@ -491,7 +503,9 @@ export default function EarthDetectiveDashboard() {
                   Wilting Margin
                 </div>
                 <div className="text-sm font-bold text-slate-900 mt-0.5">
-                  {prediction.predictedDaysToPWP.toFixed(1)} Y
+                  {prediction.predictedDaysToPWP > 14
+                    ? '> 14 D'
+                    : `${prediction.predictedDaysToPWP.toFixed(1)} D`}
                 </div>
               </div>
             </div>
