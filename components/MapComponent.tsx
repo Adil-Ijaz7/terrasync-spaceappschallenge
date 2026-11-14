@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,44 +12,54 @@ interface MapProps {
   onSelectCoordinates: (lat: number, lng: number) => void;
   farms: FarmRecord[];
   onSelectFarm?: (farm: FarmRecord) => void;
-  mapStyle?: 'satellite' | 'dark';
+  mapStyle?: 'voyager' | 'satellite' | 'dark';
 }
 
-// Tactical Military Crosshair Marker (matches sci-fi HUD)
-const createTacticalCrosshairIcon = () =>
+// Glowing Amber Circle Marker (matches the exact aesthetic of the reference image)
+const createAmberRadarPinIcon = (isSelected: boolean = false) =>
   L.divIcon({
-    className: 'tactical-crosshair-pin',
+    className: 'amber-radar-pin',
     html: `
-      <div class="relative flex items-center justify-center w-12 h-12 -ml-3 -mt-3 pointer-events-none">
-        <!-- Outer sonar ring -->
-        <div class="absolute w-12 h-12 rounded-full border border-cyan-400/40 animate-ping"></div>
-        <!-- Inner radar circle -->
-        <div class="absolute w-8 h-8 rounded-full border border-cyan-400/70 shadow-[0_0_12px_#06b6d4]"></div>
-        <!-- Tactical crosshairs -->
-        <div class="absolute w-10 h-[1px] bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></div>
-        <div class="absolute h-10 w-[1px] bg-cyan-400 shadow-[0_0_6px_#06b6d4]"></div>
-        <!-- Center core dot -->
-        <div class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff]"></div>
+      <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer group">
+        <!-- Soft Outer Pulse Ring -->
+        <div class="absolute w-8 h-8 rounded-full ${
+          isSelected
+            ? 'bg-amber-400/35 border-2 border-amber-400 animate-ping'
+            : 'bg-amber-400/20 border border-amber-400/40 group-hover:scale-125 transition-transform'
+        }"></div>
+        <!-- Inner Glow -->
+        <div class="absolute w-5 h-5 rounded-full bg-amber-400/30 blur-[2px]"></div>
+        <!-- Solid Center Dot -->
+        <div class="relative w-3.5 h-3.5 rounded-full ${
+          isSelected
+            ? 'bg-amber-500 ring-4 ring-amber-300/60 shadow-[0_0_12px_#f59e0b]'
+            : 'bg-amber-500 shadow-md shadow-amber-500/40'
+        } border-2 border-white transition-all group-hover:scale-125"></div>
       </div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
   });
 
-// Minimalist Farm Outpost Marker
-const createFarmOutpostIcon = () =>
+// Target Crosshair / Detective Focus Pin
+const createDetectiveTargetIcon = () =>
   L.divIcon({
-    className: 'farm-outpost-pin',
+    className: 'detective-target-pin',
     html: `
-      <div class="relative flex items-center justify-center w-5 h-5 cursor-pointer group">
-        <div class="w-2.5 h-2.5 rounded-full bg-purple-500 border border-purple-200 shadow-[0_0_8px_#a855f7] transition-transform group-hover:scale-150"></div>
-        <div class="absolute -top-4 left-3 px-1.5 py-0.5 rounded bg-slate-950/80 border border-purple-500/40 text-[9px] font-mono text-purple-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          OUTPOST
-        </div>
+      <div class="relative flex items-center justify-center w-10 h-10 -ml-5 -mt-5 pointer-events-none">
+        <!-- Sonar radar ring -->
+        <div class="absolute w-10 h-10 rounded-full border border-amber-500/50 animate-ping"></div>
+        <!-- Radar boundary circle -->
+        <div class="absolute w-7 h-7 rounded-full border border-amber-500/80 shadow-[0_0_10px_#f59e0b]"></div>
+        <!-- Fine crosshairs -->
+        <div class="absolute w-8 h-[1.5px] bg-amber-500"></div>
+        <div class="absolute h-8 w-[1.5px] bg-amber-500"></div>
+        <!-- Center core dot -->
+        <div class="w-2 h-2 rounded-full bg-white border border-amber-600 shadow-[0_0_6px_#ffffff]"></div>
       </div>
     `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
   });
 
 function MapEventsHandler({ onSelectCoordinates }: { onSelectCoordinates: (lat: number, lng: number) => void }) {
@@ -64,7 +74,9 @@ function MapEventsHandler({ onSelectCoordinates }: { onSelectCoordinates: (lat: 
 function MapRecenter({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], map.getZoom(), { duration: 1.0 });
+    const currentZoom = map.getZoom();
+    const targetZoom = currentZoom < 10 ? 11 : currentZoom;
+    map.flyTo([lat, lng], targetZoom, { duration: 1.2 });
   }, [lat, lng, map]);
   return null;
 }
@@ -75,56 +87,71 @@ export default function MapComponent({
   onSelectCoordinates,
   farms,
   onSelectFarm,
-  mapStyle = 'satellite',
+  mapStyle = 'voyager',
 }: MapProps) {
-  // Esri Satellite vs CartoDB Dark Matter
+  // Tile Layer options matching reference styling:
+  // CartoDB Voyager: clean, soft pastel roads, mint green parks, light turquoise oceans
+  const voyagerUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
   const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   const darkUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
+  const tileUrl =
+    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'dark' ? darkUrl : voyagerUrl;
+
   return (
-    <div className="absolute inset-0 w-full h-full bg-[#030712] overflow-hidden">
+    <div className="relative w-full h-full bg-[#e8f1ee] overflow-hidden">
       <MapContainer
         center={[selectedLat, selectedLng]}
-        zoom={6}
+        zoom={11}
         scrollWheelZoom={true}
         zoomControl={false}
         className="w-full h-full"
-        style={{ minHeight: '100vh', background: '#030712' }}
+        style={{ minHeight: '100%', width: '100%', background: '#e8f1ee' }}
       >
         <TileLayer
-          attribution='&copy; NASA / Esri / USGS'
-          url={mapStyle === 'satellite' ? satelliteUrl : darkUrl}
-          maxZoom={18}
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; NASA'
+          url={tileUrl}
+          maxZoom={19}
         />
 
         <MapRecenter lat={selectedLat} lng={selectedLng} />
         <MapEventsHandler onSelectCoordinates={onSelectCoordinates} />
 
-        {/* Tactical Crosshair at Target Coordinate */}
-        <Marker position={[selectedLat, selectedLng]} icon={createTacticalCrosshairIcon()} />
+        {/* Selected Coordinate Active Target Marker */}
+        <Marker position={[selectedLat, selectedLng]} icon={createDetectiveTargetIcon()} />
 
-        {/* Registered Agricultural Outposts in Dadu */}
-        {farms.map((farm) => (
-          <Marker
-            key={farm.id}
-            position={[farm.latitude, farm.longitude]}
-            icon={createFarmOutpostIcon()}
-            eventHandlers={{
-              click: () => {
-                onSelectCoordinates(farm.latitude, farm.longitude);
-                if (onSelectFarm) onSelectFarm(farm);
-              },
-            }}
-          >
-            <Popup className="custom-leaflet-popup">
-              <div className="p-2 text-xs text-slate-200 font-mono space-y-1">
-                <div className="text-purple-400 font-bold">{farm.farmer_name}</div>
-                <div className="text-slate-400">{farm.region}</div>
-                <div className="text-cyan-300 font-semibold">{farm.phone_number}</div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {/* Registered Agricultural Outposts in Dadu District */}
+        {farms.map((farm) => {
+          const isSelected =
+            Math.abs(farm.latitude - selectedLat) < 0.001 &&
+            Math.abs(farm.longitude - selectedLng) < 0.001;
+
+          return (
+            <Marker
+              key={farm.id}
+              position={[farm.latitude, farm.longitude]}
+              icon={createAmberRadarPinIcon(isSelected)}
+              eventHandlers={{
+                click: () => {
+                  onSelectCoordinates(farm.latitude, farm.longitude);
+                  if (onSelectFarm) onSelectFarm(farm);
+                },
+              }}
+            >
+              <Popup className="custom-leaflet-popup">
+                <div className="p-2 text-xs font-sans text-slate-800 space-y-1">
+                  <div className="text-amber-600 font-bold flex items-center gap-1">
+                    <span>🌾</span> {farm.farmer_name}
+                  </div>
+                  <div className="text-slate-600 text-[11px]">{farm.region}</div>
+                  <div className="text-slate-400 text-[10px] font-mono">
+                    {farm.crop_type || 'Rice'} • {farm.latitude.toFixed(4)}°N, {farm.longitude.toFixed(4)}°E
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

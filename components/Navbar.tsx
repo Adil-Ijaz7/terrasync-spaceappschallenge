@@ -52,6 +52,11 @@ export default function Navbar() {
     { href: '/settings', label: 'ML & Settings', icon: Settings },
   ];
 
+  // In the primary Command Center dashboard, we render the bespoke floating tablet dock from the design reference
+  if (pathname === '/') {
+    return null;
+  }
+
   return (
     <header
       suppressHydrationWarning

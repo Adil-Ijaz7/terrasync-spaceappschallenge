@@ -5,8 +5,10 @@ import { generateAgronomistAdvice } from '@/lib/agronomist';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const lat = typeof body.lat === 'number' ? body.lat : 26.7341; // Default Dadu, Sindh
-    const lng = typeof body.lng === 'number' ? body.lng : 67.7795;
+    const rawLat = typeof body.latitude === 'number' ? body.latitude : body.lat;
+    const rawLng = typeof body.longitude === 'number' ? body.longitude : body.lng;
+    const lat = typeof rawLat === 'number' && !isNaN(rawLat) ? rawLat : 26.7341; // Default Dadu, Sindh
+    const lng = typeof rawLng === 'number' && !isNaN(rawLng) ? rawLng : 67.7795;
     const crop = body.crop || 'rice';
     const farmerName = body.farmerName || 'Local Farmer';
 
