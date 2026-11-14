@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Layers, MapPin, Sparkles, Navigation } from 'lucide-react';
-import HudTelemetryCard from '@/components/HudTelemetryCard';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { FarmRecord } from '@/lib/supabase';
@@ -16,6 +15,29 @@ const MapComponent = dynamic(() => import('@/components/MapComponent'), {
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
         <span className="text-xs text-slate-400 font-medium">Loading Satellite Observations...</span>
+      </div>
+    </div>
+  ),
+});
+
+// Dynamically import HudTelemetryCard to disable SSR and prevent hydration mismatches from browser extensions and client telemetry
+const HudTelemetryCard = dynamic(() => import('@/components/HudTelemetryCard'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-[390px] sm:w-[450px] bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-5 shadow-2xl text-slate-100 font-sans space-y-4 animate-pulse">
+      <div className="flex items-start justify-between border-b border-slate-800/80 pb-3">
+        <div className="space-y-1.5">
+          <div className="h-3 bg-slate-800 rounded w-28"></div>
+          <div className="h-5 bg-slate-800 rounded w-48"></div>
+        </div>
+        <div className="h-5 bg-slate-800 rounded w-16"></div>
+      </div>
+      <div className="h-14 bg-slate-900 border border-slate-800 rounded-xl"></div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="h-20 bg-slate-900 border border-slate-800 rounded-xl"></div>
+        <div className="h-20 bg-slate-900 border border-slate-800 rounded-xl"></div>
+        <div className="h-20 bg-slate-900 border border-slate-800 rounded-xl"></div>
+        <div className="h-20 bg-slate-900 border border-slate-800 rounded-xl"></div>
       </div>
     </div>
   ),
@@ -95,7 +117,10 @@ export default function CommandCenterPage() {
   };
 
   return (
-    <div className="relative flex-1 w-full h-[calc(100vh-56px)] overflow-hidden bg-slate-950 font-sans">
+    <div
+      suppressHydrationWarning
+      className="relative flex-1 w-full h-[calc(100vh-56px)] overflow-hidden bg-slate-950 font-sans"
+    >
       {/* 1. Fullscreen Interactive Satellite Map Canvas */}
       <MapComponent
         selectedLat={selectedLat}

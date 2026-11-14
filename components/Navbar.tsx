@@ -53,9 +53,12 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 h-14 flex items-center justify-between text-slate-200 select-none transition-all">
+    <header
+      suppressHydrationWarning
+      className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 h-14 flex items-center justify-between text-slate-200 select-none transition-all"
+    >
       {/* Brand & NASA Space Apps Badge */}
-      <div className="flex items-center gap-3">
+      <div suppressHydrationWarning className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-all">
             <Globe2 className="w-4 h-4 text-white" />

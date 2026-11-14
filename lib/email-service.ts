@@ -28,12 +28,13 @@ export interface EmailAlertPayload {
 
 export interface EmailDispatchResult {
   success: boolean;
-  mode: 'live_smtp' | 'simulated_carrier';
+  mode: 'live_smtp' | 'ethereal_webmail' | 'simulated_carrier';
   messageId: string;
   recipientEmail: string;
   timestamp: string;
   summary: string;
   previewHtml?: string;
+  previewUrl?: string;
   error?: string;
 }
 
@@ -41,14 +42,20 @@ export interface EmailDispatchResult {
  * Configure Nodemailer Transport
  */
 function getMailerTransport() {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  const host = process.env.SMTP_HOST?.trim() || (user?.includes('@gmail.com') ? 'smtp.gmail.com' : undefined);
+  const port = parseInt(process.env.SMTP_PORT || '465', 10);
 
-  if (host && user && pass) {
+  if (user && pass) {
+    if (host?.includes('gmail') || user.includes('@gmail.com')) {
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass },
+      });
+    }
     return nodemailer.createTransport({
-      host,
+      host: host || 'smtp.gmail.com',
       port,
       secure: port === 465,
       auth: { user, pass },
@@ -314,10 +321,13 @@ NASA Telemetry: Temp ${nasaSnapshot?.power.temperatureC || 38.5}°C, Moisture ${
   const transporter = getMailerTransport();
   let liveSent = false;
   let sentMessageId = `EMAIL_SIM_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  let liveError: string | undefined;
+  let etherealUrl: string | undefined;
 
+  // 1. Try Live User-Configured SMTP (Gmail, SendGrid, etc.)
   if (transporter) {
     try {
-      const fromAddress = process.env.SMTP_FROM || '"TerraSync Agro-Alert" <alerts@terrasync.org>';
+      const fromAddress = process.env.SMTP_FROM || `"TerraSync Agro-Alert" <${process.env.SMTP_USER}>`;
       const info = await transporter.sendMail({
         from: fromAddress,
         to,
@@ -328,7 +338,40 @@ NASA Telemetry: Temp ${nasaSnapshot?.power.temperatureC || 38.5}°C, Moisture ${
       sentMessageId = info.messageId || sentMessageId;
       liveSent = true;
     } catch (smtpErr: any) {
-      console.warn('Live SMTP send failed, falling back to verified simulated carrier delivery:', smtpErr.message);
+      console.warn('Live SMTP send failed:', smtpErr.message);
+      liveError = smtpErr.message;
+    }
+  }
+
+  // 2. If Live SMTP not configured or failed, dispatch via Ethereal Live Test Mailbox
+  if (!liveSent) {
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      const etherealTransporter = nodemailer.createTransport({
+        host: testAccount.smtp.host,
+        port: testAccount.smtp.port,
+        secure: testAccount.smtp.secure,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+
+      const ethInfo = await etherealTransporter.sendMail({
+        from: '"TerraSync Agro-Alert" <alerts@terrasync.org>',
+        to,
+        subject,
+        text: messageText,
+        html: emailHtml,
+      });
+
+      const url = nodemailer.getTestMessageUrl(ethInfo);
+      if (url) {
+        etherealUrl = url as string;
+        sentMessageId = ethInfo.messageId || sentMessageId;
+      }
+    } catch (ethErr: any) {
+      console.warn('Ethereal test dispatch fallback error:', ethErr.message);
     }
   }
 
@@ -342,17 +385,31 @@ NASA Telemetry: Temp ${nasaSnapshot?.power.temperatureC || 38.5}°C, Moisture ${
       mlPrediction: mlPrediction || {},
     },
     ai_generated_advice: advisoryTextSindhi || advisoryTextUrdu || advisoryTextEnglish || messageText,
-    email_status: 'delivered',
+    email_status: liveSent ? 'delivered' : 'simulated',
   });
+
+  const mode = liveSent
+    ? 'live_smtp'
+    : etherealUrl
+    ? 'ethereal_webmail'
+    : 'simulated_carrier';
+
+  const summary = liveSent
+    ? `Live email alert sent directly to ${to} via SMTP!`
+    : etherealUrl
+    ? `Alert sent to live Webmail inbox (viewable online). To send to real Gmail, add SMTP_USER & SMTP_PASS in .env.local!`
+    : `Alert email processed and recorded for ${to}.`;
 
   return {
     success: true,
-    mode: liveSent ? 'live_smtp' : 'simulated_carrier',
+    mode,
     messageId: sentMessageId,
     recipientEmail: to,
     timestamp,
-    summary: `Automated alert email delivered to ${to} (${farmerName}) with ML 3-day projection!`,
+    summary,
     previewHtml: emailHtml,
+    previewUrl: etherealUrl,
+    error: liveError,
   };
 }
 

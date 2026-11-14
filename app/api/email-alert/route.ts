@@ -60,6 +60,8 @@ export async function POST(request: Request) {
       recipientEmail: result.recipientEmail,
       carrierNote: result.summary,
       previewHtml: result.previewHtml,
+      previewUrl: result.previewUrl,
+      smtpError: result.error,
       mlPredictionSummary: mlPrediction ? {
         trendDirection: mlPrediction.trendDirection,
         predictedDaysToPWP: mlPrediction.predictedDaysToPWP,

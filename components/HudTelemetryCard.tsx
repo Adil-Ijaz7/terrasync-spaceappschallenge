@@ -57,6 +57,8 @@ export default function HudTelemetryCard({
     carrierNote?: string;
     recipientEmail?: string;
     previewHtml?: string;
+    previewUrl?: string;
+    smtpError?: string;
   } | null>(null);
 
   // Derived telemetry metrics
@@ -171,6 +173,8 @@ export default function HudTelemetryCard({
           carrierNote: data.carrierNote,
           recipientEmail: data.recipientEmail,
           previewHtml: data.previewHtml,
+          previewUrl: data.previewUrl,
+          smtpError: data.smtpError,
         });
       } else {
         alert(data.error || 'Failed to dispatch email');
@@ -185,7 +189,10 @@ export default function HudTelemetryCard({
 
   return (
     <>
-      <div className="w-[390px] sm:w-[450px] bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-5 shadow-2xl text-slate-100 font-sans space-y-4">
+      <div
+        suppressHydrationWarning
+        className="w-[390px] sm:w-[450px] bg-slate-950/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-5 shadow-2xl text-slate-100 font-sans space-y-4"
+      >
         {/* 1. Header */}
         <div className="flex items-start justify-between border-b border-slate-800/80 pb-3">
           <div>
@@ -506,18 +513,44 @@ export default function HudTelemetryCard({
 
           {/* Email Sent Confirmation and HTML Preview Trigger */}
           {dispatchResult && (
-            <div className="p-2.5 rounded-lg text-xs bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Alert email delivered to {dispatchResult.recipientEmail}!</span>
+            <div className="p-3 rounded-xl text-xs bg-slate-900 border border-emerald-500/40 text-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>
+                    {dispatchResult.mode === 'live_smtp'
+                      ? `Real Email Sent to ${dispatchResult.recipientEmail}!`
+                      : `Alert Dispatched to Live Test Mailbox!`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {dispatchResult.previewUrl && (
+                    <a
+                      href={dispatchResult.previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold hover:bg-emerald-900 transition-colors text-[11px]"
+                      title="Open online webmail test inbox"
+                    >
+                      <span>Open Webmail</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setShowEmailModal(true)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 text-sky-400 hover:text-sky-300 font-semibold text-[11px] border border-slate-700"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Inspect HTML</span>
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => setShowEmailModal(true)}
-                className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 font-semibold"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Inspect HTML</span>
-              </button>
+
+              {dispatchResult.mode !== 'live_smtp' && (
+                <div className="text-[10px] text-slate-400 bg-slate-950 p-2 rounded-lg border border-slate-800/80 leading-relaxed">
+                  💡 <strong>To receive directly in your real Gmail inbox:</strong> Add your Gmail address and 16-character <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer" className="text-sky-400 underline">Google App Password</a> to <code className="text-sky-300 font-mono">SMTP_USER</code> and <code className="text-sky-300 font-mono">SMTP_PASS</code> in <code className="text-slate-300 font-mono">.env.local</code>.
+                </div>
+              )}
             </div>
           )}
 
