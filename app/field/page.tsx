@@ -15,7 +15,9 @@ import {
   BrainCircuit,
   TrendingDown,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Send,
+  Sparkles
 } from 'lucide-react';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
@@ -25,7 +27,7 @@ export default function FieldAgentPwaPage() {
   const [lat, setLat] = useState(26.7341);
   const [lng, setLng] = useState(67.7795);
   const [crop, setCrop] = useState('rice');
-  const [farmerEmail, setFarmerEmail] = useState('ghulam.rasool.brohi@sindhfarms.pk');
+  const [farmerEmail, setFarmerEmail] = useState('adilijaz.gemini@gmail.com');
   const [telemetry, setTelemetry] = useState<NasaTelemetrySnapshot | null>(null);
   const [advice, setAdvice] = useState<AgronomistOutput | null>(null);
   const [mlPrediction, setMlPrediction] = useState<MlPredictionResult | null>(null);
@@ -98,7 +100,7 @@ export default function FieldAgentPwaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: farmerEmail,
-          farmerName: 'Field Outpost Farmer',
+          farmerName: 'Dadu Smallholder Outpost',
           crop,
           region: 'Dadu, Sindh',
           advisoryTextEnglish: advice?.englishExplanation,
@@ -112,12 +114,16 @@ export default function FieldAgentPwaPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setFeedback(`Advisory email delivered to ${farmerEmail}!`);
+        setFeedback(
+          data.mode === 'live_smtp'
+            ? `Email physically delivered to ${farmerEmail} via live SMTP!`
+            : `Advisory processed for ${farmerEmail} (${data.carrierNote || 'Generated'}). Configure SMTP_USER in .env.local to route through live Gmail.`
+        );
       } else {
         setFeedback(data.error || 'Failed to dispatch email');
       }
     } catch (e: any) {
-      setFeedback('Error sending alert email');
+      setFeedback('Error sending alert email: ' + (e.message || 'Network error'));
     } finally {
       setIsSending(false);
     }
@@ -146,65 +152,67 @@ export default function FieldAgentPwaPage() {
   };
 
   return (
-    <div className="flex-1 max-w-xl w-full mx-auto p-4 sm:p-6 space-y-6 font-sans">
-      {/* Mobile Card Wrapper */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5">
+    <div className="w-full h-full p-4 sm:p-6 lg:p-8 overflow-y-auto font-sans bg-[#f4f7f6] text-slate-900 flex flex-col items-center justify-start">
+      {/* Mobile Frame Container (Styled in clean modern light aesthetic matching main dashboard) */}
+      <div className="w-full max-w-lg bg-white border border-slate-200/90 rounded-[32px] p-5 sm:p-6 shadow-sm space-y-4">
+        
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Smartphone className="w-5 h-5 text-slate-950 font-bold" />
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shadow-2xs">
+              <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-tight">Field Agent Mobile PWA</h1>
-              <p className="text-xs text-slate-400">On-field NASA satellite diagnostics &amp; ML email alerts</p>
+              <h1 className="text-base font-bold text-slate-900 tracking-tight">Field Agent Mobile Console</h1>
+              <p className="text-[11px] text-slate-500">On-field NASA satellite diagnostics &amp; ML alerts</p>
             </div>
           </div>
           <button
             onClick={handleUseCurrentLocation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs"
+            title="Get device GPS coordinates"
           >
-            <Navigation className="w-3.5 h-3.5" />
+            <Navigation className="w-3.5 h-3.5 text-amber-400" />
             <span>GPS</span>
           </button>
         </div>
 
-        {/* Location & Crop Inputs */}
+        {/* Location & Crop Controls */}
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Latitude (°N)</label>
+            <label className="block text-slate-600 mb-1 font-semibold">Latitude (°N)</label>
             <input
               type="number"
               step="any"
               value={lat}
               onChange={(e) => setLat(parseFloat(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-sky-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:border-slate-400"
             />
           </div>
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Longitude (°E)</label>
+            <label className="block text-slate-600 mb-1 font-semibold">Longitude (°E)</label>
             <input
               type="number"
               step="any"
               value={lng}
               onChange={(e) => setLng(parseFloat(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 font-mono focus:border-sky-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:border-slate-400"
             />
           </div>
 
           <div className="col-span-2">
-            <label className="block text-slate-400 mb-1 font-medium">Selected Crop</label>
+            <label className="block text-slate-600 mb-1 font-semibold">Target Crop Variety</label>
             <select
               value={crop}
               onChange={(e) => {
                 setCrop(e.target.value);
                 fetchTelemetry(lat, lng, e.target.value);
               }}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:border-sky-500 text-xs"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-slate-400 text-xs font-medium"
             >
               <option value="rice">Rice (IRRI-6 / Basmati)</option>
-              <option value="wheat">Wheat (Gandum)</option>
-              <option value="cotton">Cotton (Kapas)</option>
+              <option value="wheat">Wheat (Rabi)</option>
+              <option value="cotton">Cotton</option>
             </select>
           </div>
         </div>
@@ -212,101 +220,111 @@ export default function FieldAgentPwaPage() {
         {/* Telemetry Snapshot */}
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-sky-400" />
-            <span className="text-xs">Querying NASA POWER Daily Grid...</span>
+            <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
+            <span className="text-xs font-medium">Querying NASA POWER Agroclimatology...</span>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Thermometer className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Temperature</span>
+          <div className="space-y-3.5">
+            {/* 2 Micro-Metric Tiles matching main dashboard */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                  <Thermometer className="w-3.5 h-3.5 text-orange-500" />
+                  <span>NASA Surface Temp</span>
                 </span>
-                <div className="text-xl font-bold text-white mt-1">
-                  {telemetry?.power.temperatureC.toFixed(1) ?? '38.5'}°C
+                <div className="text-xl font-bold text-slate-900 mt-1">
+                  {(telemetry?.power.temperatureC ?? 38.5).toFixed(1)}°C
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800/80">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-sky-400" />
-                  <span>Soil Moisture</span>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                  <Droplets className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Root Moisture</span>
                 </span>
-                <div className="text-xl font-bold text-white mt-1">
-                  {telemetry?.power.soilMoisturePercent ?? 14}%
+                <div className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-1.5">
+                  <span>{telemetry?.power.soilMoisturePercent ?? 14}%</span>
+                  {(telemetry?.power.soilMoisturePercent ?? 14) <= 15 ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                      BREACH
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      SAFE
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* ML Predictive Forecast Widget */}
+            {/* ML Predictive Forecast Box */}
             {mlPrediction && (
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-indigo-400 font-bold">
-                    <BrainCircuit className="w-4 h-4" />
-                    <span>ML Predictive Forecast</span>
+                  <span className="flex items-center gap-1.5 text-amber-900 font-bold">
+                    <BrainCircuit className="w-4 h-4 text-amber-600" />
+                    <span>ML Predictive Time-Series</span>
                   </span>
-                  <span className="text-[10px] text-amber-400 font-mono font-semibold">
-                    Wilt in {mlPrediction.predictedDaysToPWP} Days
+                  <span className="text-[11px] text-amber-800 font-mono font-bold bg-white px-2 py-0.5 rounded-full border border-amber-200">
+                    Wilt in {mlPrediction.predictedDaysToPWP > 14 ? '> 14' : mlPrediction.predictedDaysToPWP.toFixed(1)} Days
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 pt-1 text-center">
                   {mlPrediction.forecast3Days.map((fc) => (
-                    <div key={fc.dayOffset} className="p-1.5 rounded-xl bg-slate-900 border border-slate-800">
-                      <div className="text-[10px] text-slate-400">Day +{fc.dayOffset}</div>
-                      <div className="text-xs font-bold text-white">{fc.predictedTempC}°C</div>
-                      <div className="text-xs text-sky-400 font-mono">{fc.predictedMoisturePercent}%</div>
+                    <div key={fc.dayOffset} className="p-2 rounded-xl bg-white border border-amber-200/60 shadow-2xs">
+                      <div className="text-[10px] text-slate-400 font-medium">Day +{fc.dayOffset}</div>
+                      <div className="text-xs font-bold text-slate-900">{fc.predictedTempC}°C</div>
+                      <div className="text-xs text-amber-600 font-mono font-semibold">{fc.predictedMoisturePercent}%</div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Advisory in Sindhi & Urdu */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+            {/* Native Advisory in Sindhi */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-sky-400">سنڌي صلاح (Sindhi Advisory)</span>
+                <span className="text-xs font-bold text-slate-900">سنڌي صلاح (Native Sindhi Advisory)</span>
                 <button
                   onClick={playVoice}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
                     isPlayingAudio
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500 animate-pulse'
-                      : 'bg-slate-800 text-slate-200 border-slate-700'
+                      ? 'bg-amber-500 text-white border-amber-600 animate-pulse'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400 shadow-2xs'
                   }`}
                 >
-                  {isPlayingAudio ? <VolumeX className="w-3 h-3 text-emerald-400" /> : <Volume2 className="w-3 h-3 text-sky-400" />}
+                  {isPlayingAudio ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3 text-amber-500" />}
                   <span>{isPlayingAudio ? 'Stop' : 'Voice'}</span>
                 </button>
               </div>
-              <p className="text-sm text-slate-100 leading-relaxed font-sans" dir="rtl">
+              <p className="text-sm text-slate-800 leading-relaxed font-sans font-medium" dir="rtl">
                 {advice?.sindhiText || '[خبردار] ٻنيءَ ۾ پاڻي جي کوٽ ۽ سخت گرمي آهي. شام جو پاڻي ضرور لڳايو.'}
               </p>
             </div>
 
-            {/* Automated Email Dispatch Section */}
-            <div className="space-y-2 pt-2 border-t border-slate-800">
-              <label className="block text-slate-400 text-xs font-medium">Farmer Email Address</label>
+            {/* Email Dispatch Action */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <label className="block text-slate-700 text-xs font-semibold">Farmer Alert Email Address</label>
               <div className="flex items-center gap-2">
                 <input
                   type="email"
                   value={farmerEmail}
                   onChange={(e) => setFarmerEmail(e.target.value)}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono focus:border-sky-500"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-xs text-slate-900 font-mono outline-none focus:border-slate-400"
                 />
                 <button
                   onClick={handleSendEmailAlert}
                   disabled={isSending}
-                  className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+                  className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
                 >
-                  {isSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                  {isSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-amber-400" />}
                   <span>Email Alert</span>
                 </button>
               </div>
 
               {feedback && (
-                <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2 mt-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 mt-2 leading-relaxed">
+                  <CheckCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>{feedback}</span>
                 </div>
               )}
