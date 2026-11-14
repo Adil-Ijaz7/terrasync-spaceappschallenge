@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Leaflet Map styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+  z-index: 10;
+}
+
+.custom-leaflet-popup .leaflet-popup-content-wrapper {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+  padding: 2px;
+}
+
+.custom-leaflet-popup .leaflet-popup-tip {
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+.custom-leaflet-popup a.leaflet-popup-close-button {
+  color: #94a3b8;
+  padding: 4px;
+}
+
+.custom-leaflet-popup a.leaflet-popup-close-button:hover {
+  color: #ffffff;
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
