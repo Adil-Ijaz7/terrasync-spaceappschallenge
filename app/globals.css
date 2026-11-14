@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #cde4df;
+  --background: #f4f7f6;
   --foreground: #0f172a;
 }
 
@@ -16,9 +16,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
-  overflow-x: hidden;
+  overflow: hidden;
   margin: 0;
   padding: 0;
+  width: 100vw;
+  height: 100vh;
 }
 
 /* Custom Leaflet Map styling */
@@ -27,6 +29,7 @@ body {
   height: 100%;
   font-family: inherit;
   z-index: 10;
+  background: #f1f5f4 !important;
 }
 
 .custom-leaflet-popup .leaflet-popup-content-wrapper {
@@ -54,12 +57,12 @@ body {
 
 /* Keyframe animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .no-scrollbar::-webkit-scrollbar {

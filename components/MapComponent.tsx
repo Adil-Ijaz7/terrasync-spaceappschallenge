@@ -12,10 +12,10 @@ interface MapProps {
   onSelectCoordinates: (lat: number, lng: number) => void;
   farms: FarmRecord[];
   onSelectFarm?: (farm: FarmRecord) => void;
-  mapStyle?: 'voyager' | 'satellite' | 'dark';
+  mapStyle?: 'street' | 'satellite' | 'topo';
 }
 
-// Glowing Amber Circle Marker (matches the exact aesthetic of the reference image)
+// Glowing Amber Circle Marker (matches the exact aesthetic of the reference design)
 const createAmberRadarPinIcon = (isSelected: boolean = false) =>
   L.divIcon({
     className: 'amber-radar-pin',
@@ -87,31 +87,33 @@ export default function MapComponent({
   onSelectCoordinates,
   farms,
   onSelectFarm,
-  mapStyle = 'voyager',
+  mapStyle = 'street',
 }: MapProps) {
-  // Tile Layer options matching reference styling:
-  // CartoDB Voyager: clean, soft pastel roads, mint green parks, light turquoise oceans
-  const voyagerUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+  // Tile URLs (100% Free, Zero API Key Required, Pristine High-Res Tiles)
+  // 1. Esri World Street Map (Soft pastel roads, green parks, clean water, identical to reference screenshot aesthetic)
+  const streetUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+  // 2. Esri World Imagery (High-Resolution NASA & Satellite Imagery)
   const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-  const darkUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  // 3. Esri World Topo Map (Topographic and terrain contours)
+  const topoUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
 
   const tileUrl =
-    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'dark' ? darkUrl : voyagerUrl;
+    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'topo' ? topoUrl : streetUrl;
 
   return (
-    <div className="relative w-full h-full bg-[#e8f1ee] overflow-hidden">
+    <div className="relative w-full h-full bg-[#f1f5f4] overflow-hidden">
       <MapContainer
         center={[selectedLat, selectedLng]}
         zoom={11}
         scrollWheelZoom={true}
         zoomControl={false}
         className="w-full h-full"
-        style={{ minHeight: '100%', width: '100%', background: '#e8f1ee' }}
+        style={{ minHeight: '100%', width: '100%', background: '#f1f5f4' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; NASA'
+          attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; NASA &copy; USGS'
           url={tileUrl}
-          maxZoom={19}
+          maxZoom={18}
         />
 
         <MapRecenter lat={selectedLat} lng={selectedLng} />
