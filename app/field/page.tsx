@@ -17,11 +17,23 @@ import {
   ShieldCheck,
   AlertTriangle,
   Send,
-  Sparkles
+  Sparkles,
+  Compass,
+  Radio,
+  Layers,
+  Clock
 } from 'lucide-react';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { runMlPredictionModel, MlPredictionResult } from '@/lib/ml-detector';
+
+const DADU_PRESETS = [
+  { name: 'Dadu Central', lat: 26.7341, lng: 67.7795, note: 'District Headquarters' },
+  { name: 'Johi Canal', lat: 26.6912, lng: 67.6144, note: 'Canal Irrigated Belt' },
+  { name: 'Mehar Plains', lat: 27.1812, lng: 67.8223, note: 'Rabi Wheat Sector' },
+  { name: 'Sehwan Basin', lat: 26.4258, lng: 67.8624, note: 'Indus River Floodplain' },
+  { name: 'KN Shah Plain', lat: 26.8920, lng: 67.8910, note: 'Rice Paddy Basin' },
+];
 
 export default function FieldAgentPwaPage() {
   const [lat, setLat] = useState(26.7341);
@@ -34,6 +46,7 @@ export default function FieldAgentPwaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [activeLangTab, setActiveLangTab] = useState<'sindhi' | 'urdu' | 'english'>('sindhi');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchTelemetry = async (latitude: number, longitude: number, currentCrop: string) => {
@@ -74,15 +87,23 @@ export default function FieldAgentPwaPage() {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLat(pos.coords.latitude);
-          setLng(pos.coords.longitude);
-          fetchTelemetry(pos.coords.latitude, pos.coords.longitude, crop);
+          const newLat = Number(pos.coords.latitude.toFixed(4));
+          const newLng = Number(pos.coords.longitude.toFixed(4));
+          setLat(newLat);
+          setLng(newLng);
+          fetchTelemetry(newLat, newLng, crop);
         },
         () => {
-          alert('Could not access GPS, defaulting to Dadu, Sindh coordinates.');
+          alert('Could not access device GPS, defaulting to Dadu, Sindh coordinates.');
         }
       );
     }
+  };
+
+  const handleSelectPreset = (pLat: number, pLng: number) => {
+    setLat(pLat);
+    setLng(pLng);
+    fetchTelemetry(pLat, pLng, crop);
   };
 
   const handleSendEmailAlert = async () => {
@@ -102,7 +123,7 @@ export default function FieldAgentPwaPage() {
           to: farmerEmail,
           farmerName: 'Dadu Smallholder Outpost',
           crop,
-          region: 'Dadu, Sindh',
+          region: `Coordinates (${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E), Dadu District`,
           advisoryTextEnglish: advice?.englishExplanation,
           advisoryTextSindhi: advice?.sindhiText,
           advisoryTextUrdu: advice?.urduText,
@@ -117,7 +138,7 @@ export default function FieldAgentPwaPage() {
         setFeedback(
           data.mode === 'live_smtp'
             ? `Email physically delivered to ${farmerEmail} via live SMTP!`
-            : `Advisory processed for ${farmerEmail} (${data.carrierNote || 'Generated'}). Configure SMTP_USER in .env.local to route through live Gmail.`
+            : `Advisory processed for ${farmerEmail} (${data.carrierNote || 'Sandbox Mode'}). Configure SMTP_USER in .env.local to route through live Gmail.`
         );
       } else {
         setFeedback(data.error || 'Failed to dispatch email');
@@ -137,201 +158,415 @@ export default function FieldAgentPwaPage() {
       return;
     }
     window.speechSynthesis.cancel();
-    const text = advice?.sindhiText || advice?.urduText || 'Dadu crop telemetry active.';
-    const utterance = new SpeechSynthesisUtterance(text);
+    const textToSpeak =
+      activeLangTab === 'sindhi'
+        ? (advice?.sindhiText || 'ٻنيءَ ۾ پاڻي جي کوٽ ۽ سخت گرمي آهي.')
+        : activeLangTab === 'urdu'
+        ? (advice?.urduText || 'فصل میں پانی کی کمی اور شدید گرمی ہے۔')
+        : (advice?.englishExplanation || 'Root zone desiccation risk detected.');
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find((v) => v.lang.startsWith('ur') || v.lang.startsWith('hi') || v.lang.startsWith('ar'));
+    const voice = voices.find((v) => 
+      activeLangTab === 'english'
+        ? v.lang.startsWith('en')
+        : (v.lang.startsWith('ur') || v.lang.startsWith('hi') || v.lang.startsWith('ar'))
+    );
     if (voice) utterance.voice = voice;
     utterance.rate = 0.88;
 
     utterance.onstart = () => setIsPlayingAudio(true);
     utterance.onend = () => setIsPlayingAudio(false);
     utterance.onerror = () => setIsPlayingAudio(false);
-
     window.speechSynthesis.speak(utterance);
   };
 
   return (
-    <div className="w-full h-full p-4 sm:p-6 lg:p-8 overflow-y-auto font-sans bg-[#f4f7f6] text-slate-900 flex flex-col items-center justify-start">
-      {/* Mobile Frame Container (Styled in clean modern light aesthetic matching main dashboard) */}
-      <div className="w-full max-w-lg bg-white border border-slate-200/90 rounded-[32px] p-5 sm:p-6 shadow-sm space-y-4">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shadow-2xs">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold text-slate-900 tracking-tight">Field Agent Mobile Console</h1>
-              <p className="text-[11px] text-slate-500">On-field NASA satellite diagnostics &amp; ML alerts</p>
-            </div>
+    <div className="w-full h-full p-4 sm:p-6 lg:p-8 overflow-y-auto font-sans bg-[#f4f7f6] text-slate-900 space-y-6">
+      
+      {/* Top Header Bar spanning full width */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/90 pb-5">
+        <div>
+          <div className="flex items-center gap-2 text-amber-600 text-xs font-semibold uppercase tracking-wider mb-1">
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Field Agent Terminal • On-Ground Mobile & PWA Console</span>
           </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Field Diagnostics &amp; Multilingual Advisory Hub
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Direct on-ground NASA satellite telemetry lookup, OLS predictive wilt modeling, and real-time Sindhi/Urdu farmer alert dispatch.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleUseCurrentLocation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold transition-all shadow-xs"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white font-semibold text-xs transition-all shadow-xs"
             title="Get device GPS coordinates"
           >
             <Navigation className="w-3.5 h-3.5 text-amber-400" />
-            <span>GPS</span>
+            <span>Device GPS ({lat.toFixed(2)}°, {lng.toFixed(2)}°)</span>
+          </button>
+
+          <button
+            onClick={() => fetchTelemetry(lat, lng, crop)}
+            disabled={isLoading}
+            className="p-2.5 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-slate-950 hover:border-slate-400 transition-all shadow-xs disabled:opacity-50"
+            title="Refresh NASA Telemetry"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-amber-500' : ''}`} />
           </button>
         </div>
+      </div>
 
-        {/* Location & Crop Controls */}
-        <div className="grid grid-cols-2 gap-3 text-xs">
-          <div>
-            <label className="block text-slate-600 mb-1 font-semibold">Latitude (°N)</label>
-            <input
-              type="number"
-              step="any"
-              value={lat}
-              onChange={(e) => setLat(parseFloat(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:border-slate-400"
-            />
-          </div>
-          <div>
-            <label className="block text-slate-600 mb-1 font-semibold">Longitude (°E)</label>
-            <input
-              type="number"
-              step="any"
-              value={lng}
-              onChange={(e) => setLng(parseFloat(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono outline-none focus:border-slate-400"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-slate-600 mb-1 font-semibold">Target Crop Variety</label>
-            <select
-              value={crop}
-              onChange={(e) => {
-                setCrop(e.target.value);
-                fetchTelemetry(lat, lng, e.target.value);
-              }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 outline-none focus:border-slate-400 text-xs font-medium"
-            >
-              <option value="rice">Rice (IRRI-6 / Basmati)</option>
-              <option value="wheat">Wheat (Rabi)</option>
-              <option value="cotton">Cotton</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Telemetry Snapshot */}
-        {isLoading ? (
-          <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
-            <span className="text-xs font-medium">Querying NASA POWER Agroclimatology...</span>
-          </div>
-        ) : (
-          <div className="space-y-3.5">
-            {/* 2 Micro-Metric Tiles matching main dashboard */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                  <Thermometer className="w-3.5 h-3.5 text-orange-500" />
-                  <span>NASA Surface Temp</span>
-                </span>
-                <div className="text-xl font-bold text-slate-900 mt-1">
-                  {(telemetry?.power.temperatureC ?? 38.5).toFixed(1)}°C
+      {/* Responsive Full-Width Layout: 12-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Column (5 Cols): Coordinates, Crop Selector & NASA Telemetry */}
+        <div className="lg:col-span-5 space-y-5">
+          
+          {/* Target Location & Crop Configuration Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                  <Compass className="w-4 h-4" />
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                  <Droplets className="w-3.5 h-3.5 text-sky-500" />
-                  <span>Root Moisture</span>
-                </span>
-                <div className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-1.5">
-                  <span>{telemetry?.power.soilMoisturePercent ?? 14}%</span>
-                  {(telemetry?.power.soilMoisturePercent ?? 14) <= 15 ? (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-                      BREACH
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      SAFE
-                    </span>
-                  )}
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Target Outpost Coordinates</h3>
+                  <p className="text-[11px] text-slate-500">Select sector or enter manual coordinates</p>
                 </div>
               </div>
             </div>
 
-            {/* ML Predictive Forecast Box */}
-            {mlPrediction && (
-              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 text-amber-900 font-bold">
-                    <BrainCircuit className="w-4 h-4 text-amber-600" />
-                    <span>ML Predictive Time-Series</span>
-                  </span>
-                  <span className="text-[11px] text-amber-800 font-mono font-bold bg-white px-2 py-0.5 rounded-full border border-amber-200">
-                    Wilt in {mlPrediction.predictedDaysToPWP > 14 ? '> 14' : mlPrediction.predictedDaysToPWP.toFixed(1)} Days
-                  </span>
+            {/* Quick Sector Presets */}
+            <div>
+              <label className="block text-slate-600 text-[11px] font-semibold uppercase tracking-wider mb-2">
+                Dadu District Sectors
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {DADU_PRESETS.map((p) => {
+                  const isSelected = Math.abs(lat - p.lat) < 0.01 && Math.abs(lng - p.lng) < 0.01;
+                  return (
+                    <button
+                      key={p.name}
+                      onClick={() => handleSelectPreset(p.lat, p.lng)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                        isSelected
+                          ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white hover:border-slate-400'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Numeric Lat & Lng Inputs */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-slate-600 mb-1 text-xs font-semibold">Latitude (°N)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={lat}
+                  onChange={(e) => setLat(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-xs outline-none focus:border-slate-400 focus:bg-white transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-600 mb-1 text-xs font-semibold">Longitude (°E)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={lng}
+                  onChange={(e) => setLng(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono text-xs outline-none focus:border-slate-400 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Crop Selector */}
+            <div>
+              <label className="block text-slate-600 mb-1 text-xs font-semibold">Target Crop Variety</label>
+              <select
+                value={crop}
+                onChange={(e) => {
+                  setCrop(e.target.value);
+                  fetchTelemetry(lat, lng, e.target.value);
+                }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 outline-none focus:border-slate-400 text-xs font-medium focus:bg-white transition-all"
+              >
+                <option value="rice">Rice (IRRI-6 / Basmati) — High Water Requirement</option>
+                <option value="wheat">Wheat (Rabi Season) — Moderate Tolerance</option>
+                <option value="cotton">Cotton — High Heat Sensitivity</option>
+                <option value="sugarcane">Sugarcane — Extended Growth Cycle</option>
+              </select>
+            </div>
+          </div>
+
+          {/* NASA Live Telemetry Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                  <Radio className="w-4 h-4" />
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                  {mlPrediction.forecast3Days.map((fc) => (
-                    <div key={fc.dayOffset} className="p-2 rounded-xl bg-white border border-amber-200/60 shadow-2xs">
-                      <div className="text-[10px] text-slate-400 font-medium">Day +{fc.dayOffset}</div>
-                      <div className="text-xs font-bold text-slate-900">{fc.predictedTempC}°C</div>
-                      <div className="text-xs text-amber-600 font-mono font-semibold">{fc.predictedMoisturePercent}%</div>
-                    </div>
-                  ))}
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">NASA POWER Telemetry</h3>
+                  <p className="text-[11px] text-slate-500">Direct satellite agroclimatology assimilation</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full">
+                CERES &amp; MERRA-2
+              </span>
+            </div>
+
+            {isLoading ? (
+              <div className="py-10 flex flex-col items-center justify-center text-slate-400 gap-2">
+                <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
+                <span className="text-xs font-medium">Querying NASA Agroclimatology Feed...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3.5">
+                {/* Surface Temperature */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                    <Thermometer className="w-4 h-4 text-orange-500" />
+                    <span>Surface Temp (2m)</span>
+                  </span>
+                  <div className="text-2xl font-bold text-slate-900 mt-2">
+                    {(telemetry?.power.temperatureC ?? 27.2).toFixed(1)}°C
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-1">Thermal Stress Threshold: 38°C</span>
+                </div>
+
+                {/* Root Zone Moisture */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                    <Droplets className="w-4 h-4 text-sky-500" />
+                    <span>Root Moisture</span>
+                  </span>
+                  <div className="text-2xl font-bold text-slate-900 mt-2 flex items-center gap-2">
+                    <span>{telemetry?.power.soilMoisturePercent ?? 29}%</span>
+                    {(telemetry?.power.soilMoisturePercent ?? 29) <= 15 ? (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                        BREACH
+                      </span>
+                    ) : (telemetry?.power.soilMoisturePercent ?? 29) <= 25 ? (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                        WARNING
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        OPTIMAL
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-1">PWP Baseline: 13.5% (Rice)</span>
                 </div>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* Native Advisory in Sindhi */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900">سنڌي صلاح (Native Sindhi Advisory)</span>
-                <button
-                  onClick={playVoice}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                    isPlayingAudio
-                      ? 'bg-amber-500 text-white border-amber-600 animate-pulse'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400 shadow-2xs'
-                  }`}
-                >
-                  {isPlayingAudio ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3 text-amber-500" />}
-                  <span>{isPlayingAudio ? 'Stop' : 'Voice'}</span>
-                </button>
-              </div>
-              <p className="text-sm text-slate-800 leading-relaxed font-sans font-medium" dir="rtl">
-                {advice?.sindhiText || '[خبردار] ٻنيءَ ۾ پاڻي جي کوٽ ۽ سخت گرمي آهي. شام جو پاڻي ضرور لڳايو.'}
-              </p>
-            </div>
-
-            {/* Email Dispatch Action */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="block text-slate-700 text-xs font-semibold">Farmer Alert Email Address</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="email"
-                  value={farmerEmail}
-                  onChange={(e) => setFarmerEmail(e.target.value)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-3.5 py-2 text-xs text-slate-900 font-mono outline-none focus:border-slate-400"
-                />
-                <button
-                  onClick={handleSendEmailAlert}
-                  disabled={isSending}
-                  className="px-4 py-2 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50"
-                >
-                  {isSending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-amber-400" />}
-                  <span>Email Alert</span>
-                </button>
+        {/* Right Column (7 Cols): ML Predictions, Multilingual Advisories & Farmer Alert Dispatch */}
+        <div className="lg:col-span-7 space-y-5">
+          
+          {/* ML Time-Series Predictive Forecasting Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                  <BrainCircuit className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">ML Predictive Time-Series Engine</h3>
+                  <p className="text-[11px] text-slate-500">Ordinary Least Squares (OLS) desiccation regression</p>
+                </div>
               </div>
 
-              {feedback && (
-                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2 mt-2 leading-relaxed">
-                  <CheckCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <span>{feedback}</span>
+              {mlPrediction && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold bg-amber-50 text-amber-900 px-3 py-1 rounded-full border border-amber-200/80">
+                    PWP Wilt: {mlPrediction.predictedDaysToPWP > 14 ? '> 14 Days' : `${mlPrediction.predictedDaysToPWP.toFixed(1)} Days`}
+                  </span>
                 </div>
               )}
             </div>
+
+            {/* 3-Day Forecast Cards */}
+            {mlPrediction ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  {mlPrediction.forecast3Days.map((fc) => (
+                    <div 
+                      key={fc.dayOffset} 
+                      className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 hover:border-amber-300 transition-all text-center flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-center gap-1 text-[11px] text-slate-500 font-semibold mb-1">
+                        <Clock className="w-3 h-3 text-amber-500" />
+                        <span>Day +{fc.dayOffset}</span>
+                      </div>
+                      <div className="text-lg font-bold text-slate-900">{fc.predictedTempC}°C</div>
+                      <div className="text-xs text-amber-600 font-mono font-bold mt-1">
+                        {fc.predictedMoisturePercent}% Moisture
+                      </div>
+                      <div className="text-[10px] text-slate-400 mt-1 capitalize">
+                        {fc.riskLevel.toLowerCase()} Risk
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-200/60 flex items-center justify-between text-xs text-amber-900">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <TrendingDown className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Daily Moisture Loss Rate: <strong>{(mlPrediction.dailyMoistureLossRate * 100).toFixed(1)}%/day</strong></span>
+                  </span>
+                  <span className="font-mono text-[11px] text-amber-800">
+                    Confidence: <strong>{(mlPrediction.statisticalR2 * 100).toFixed(0)}% (R²)</strong>
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400">Loading predictive forecast...</div>
+            )}
           </div>
-        )}
+
+          {/* Multilingual Advisory Hub Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Multilingual Farmer Advisory Hub</h3>
+                  <p className="text-[11px] text-slate-500">Native Sindhi, Urdu, and English vernacular advisory</p>
+                </div>
+              </div>
+
+              {/* Voice Readout Button */}
+              <button
+                onClick={playVoice}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  isPlayingAudio
+                    ? 'bg-amber-500 text-white border-amber-600 animate-pulse shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400 shadow-2xs'
+                }`}
+                title="Synthesize audio advisory via Web Speech API"
+              >
+                {isPlayingAudio ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-amber-500" />}
+                <span>{isPlayingAudio ? 'Stop Voice' : 'Play Voice'}</span>
+              </button>
+            </div>
+
+            {/* Language Selector Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <button
+                onClick={() => setActiveLangTab('sindhi')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  activeLangTab === 'sindhi'
+                    ? 'bg-slate-950 text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                سنڌي (Sindhi)
+              </button>
+              <button
+                onClick={() => setActiveLangTab('urdu')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  activeLangTab === 'urdu'
+                    ? 'bg-slate-950 text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                اردو (Urdu)
+              </button>
+              <button
+                onClick={() => setActiveLangTab('english')}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  activeLangTab === 'english'
+                    ? 'bg-slate-950 text-white shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                English
+              </button>
+            </div>
+
+            {/* Advisory Content Display */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 min-h-[90px] flex items-center">
+              {activeLangTab === 'sindhi' && (
+                <p className="text-base text-slate-900 leading-relaxed font-sans font-medium w-full" dir="rtl">
+                  {advice?.sindhiText || '[موسم ٺيڪ آهي] گرمي پد 27°C ۽ نمي 29% آهي. فصل تي جيتن جي نگراني رکو ۽ معمول مطابق پاڻي ڏيو.'}
+                </p>
+              )}
+              {activeLangTab === 'urdu' && (
+                <p className="text-base text-slate-900 leading-relaxed font-sans font-medium w-full" dir="rtl">
+                  {advice?.urduText || '[معمول کی صورتحال] درجہ حرارت 27°C اور زمین میں نمی 29% ہے۔ معمول کے مطابق آبپاشی جاری رکھیں۔'}
+                </p>
+              )}
+              {activeLangTab === 'english' && (
+                <p className="text-sm text-slate-800 leading-relaxed font-sans font-medium w-full">
+                  {advice?.englishExplanation || 'NASA Agroclimatology indicates stable microclimate. Root zone moisture remains above critical desiccation thresholds.'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Instant Farmer Email Dispatch Card */}
+          <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">Instant Farmer Email Dispatch</h3>
+                  <p className="text-[11px] text-slate-500">Send tailored HTML satellite advisory to recipient inbox</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <input
+                type="email"
+                placeholder="farmer@domain.com"
+                value={farmerEmail}
+                onChange={(e) => setFarmerEmail(e.target.value)}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-xs text-slate-900 font-mono outline-none focus:border-slate-400 focus:bg-white transition-all"
+              />
+              <button
+                onClick={handleSendEmailAlert}
+                disabled={isSending}
+                className="px-5 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs disabled:opacity-50 shrink-0"
+              >
+                {isSending ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 text-amber-400" />
+                )}
+                <span>Dispatch Advisory</span>
+              </button>
+            </div>
+
+            {feedback && (
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5 leading-relaxed">
+                <CheckCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>{feedback}</span>
+              </div>
+            )}
+          </div>
+
+        </div>
+
       </div>
+
     </div>
   );
 }
