@@ -12,7 +12,7 @@ interface MapProps {
   onSelectCoordinates: (lat: number, lng: number) => void;
   farms: FarmRecord[];
   onSelectFarm?: (farm: FarmRecord) => void;
-  mapStyle?: 'street' | 'satellite' | 'topo';
+  mapStyle?: 'voyager' | 'satellite' | 'street';
 }
 
 // Glowing Amber Circle Marker (matches the exact aesthetic of the reference design)
@@ -87,18 +87,21 @@ export default function MapComponent({
   onSelectCoordinates,
   farms,
   onSelectFarm,
-  mapStyle = 'street',
+  mapStyle = 'voyager',
 }: MapProps) {
-  // Tile URLs (100% Free, Zero API Key Required, Pristine High-Res Tiles)
-  // 1. Esri World Street Map (Soft pastel roads, green parks, clean water, identical to reference screenshot aesthetic)
-  const streetUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+  // Official CARTO API Key
+  const cartoKey =
+    process.env.NEXT_PUBLIC_CARTO_API_KEY || 'cb1_5911_1_9c76b37cd4d732d8144e0786';
+
+  // 1. CARTO Voyager (Clean, pastel, pristine roads & water matching reference image)
+  const cartoVoyagerUrl = `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${cartoKey}`;
   // 2. Esri World Imagery (High-Resolution NASA & Satellite Imagery)
   const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-  // 3. Esri World Topo Map (Topographic and terrain contours)
-  const topoUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}';
+  // 3. Esri World Street Map (Alternative street view)
+  const streetUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
   const tileUrl =
-    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'topo' ? topoUrl : streetUrl;
+    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'street' ? streetUrl : cartoVoyagerUrl;
 
   return (
     <div className="relative w-full h-full bg-[#f1f5f4] overflow-hidden">
@@ -111,9 +114,9 @@ export default function MapComponent({
         style={{ minHeight: '100%', width: '100%', background: '#f1f5f4' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.esri.com/">Esri</a> &copy; NASA &copy; USGS'
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; NASA'
           url={tileUrl}
-          maxZoom={18}
+          maxZoom={19}
         />
 
         <MapRecenter lat={selectedLat} lng={selectedLng} />

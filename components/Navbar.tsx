@@ -19,10 +19,10 @@ export default function Navbar() {
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
+      document.documentElement.requestFullscreen().catch(() => { });
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
       setIsFullscreen(false);
     }
   };
@@ -63,11 +63,10 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                isActive
-                  ? 'bg-slate-950 text-white shadow-md shadow-slate-950/25 scale-105'
-                  : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/90'
-              }`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isActive
+                ? 'bg-slate-950 text-white shadow-md shadow-slate-950/25 scale-105'
+                : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/90'
+                }`}
               title={item.label}
             >
               <Icon className="w-4 h-4" />

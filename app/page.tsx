@@ -50,7 +50,7 @@ export default function EarthDetectiveDashboard() {
   const [selectedSectorName, setSelectedSectorName] = useState<string>('Dadu Central');
   const [selectedSectorCode, setSelectedSectorCode] = useState<string>('HO-1, HO-3, HO-7');
 
-  const [mapStyle, setMapStyle] = useState<'street' | 'satellite' | 'topo'>('street');
+  const [mapStyle, setMapStyle] = useState<'voyager' | 'satellite' | 'street'>('voyager');
   const [telemetry, setTelemetry] = useState<NasaTelemetrySnapshot | null>(null);
   const [advice, setAdvice] = useState<AgronomistOutput | null>(null);
   const [farms, setFarms] = useState<FarmRecord[]>([]);
@@ -293,12 +293,12 @@ export default function EarthDetectiveDashboard() {
 
   return (
     <div className="w-full h-screen p-3 sm:p-4 flex flex-col gap-3 overflow-hidden bg-[#f4f7f6]">
-      
+
       {/* ========================================================= */}
       {/* UPPER SECTION: THE SATELLITE CANVAS (Fills Top ~58%)      */}
       {/* ========================================================= */}
       <div className="flex-1 min-h-[320px] rounded-2xl md:rounded-3xl overflow-hidden relative border border-slate-200/90 shadow-2xs bg-[#f1f5f4]">
-        
+
         {/* Leaflet Map with Esri World Street / Satellite (Zero API Key Watermark!) */}
         <MapComponent
           selectedLat={selectedLat}
@@ -311,7 +311,7 @@ export default function EarthDetectiveDashboard() {
 
         {/* TOP FLOATING SEARCH & FILTER BAR */}
         <div className="absolute top-3 inset-x-3 sm:inset-x-4 z-20 flex flex-wrap items-center gap-2 pointer-events-auto">
-          
+
           {/* Search Pill Input */}
           <div className="flex-1 min-w-[200px] max-w-sm h-10 px-3.5 bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-2xs flex items-center gap-2 text-xs text-slate-700">
             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -356,11 +356,10 @@ export default function EarthDetectiveDashboard() {
                   setSelectedSectorCode(s.sectorCode);
                   triggerAnalysis(s.lat, s.lng, s.crop);
                 }}
-                className={`h-9 px-3 rounded-full text-[11px] font-medium transition-all shadow-2xs ${
-                  selectedSectorName === s.name
-                    ? 'bg-slate-950 text-white'
-                    : 'bg-white/95 backdrop-blur-md text-slate-700 hover:bg-slate-100 border border-slate-200/90'
-                }`}
+                className={`h-9 px-3 rounded-full text-[11px] font-medium transition-all shadow-2xs ${selectedSectorName === s.name
+                  ? 'bg-slate-950 text-white'
+                  : 'bg-white/95 backdrop-blur-md text-slate-700 hover:bg-slate-100 border border-slate-200/90'
+                  }`}
               >
                 {s.name}
               </button>
@@ -369,13 +368,13 @@ export default function EarthDetectiveDashboard() {
             {/* Map Style Toggle */}
             <button
               onClick={() =>
-                setMapStyle((prev) => (prev === 'street' ? 'satellite' : 'street'))
+                setMapStyle((prev) => (prev === 'voyager' ? 'satellite' : 'voyager'))
               }
               className="h-9 px-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-700 hover:text-slate-950 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs"
-              title="Toggle Map Style: Street Map vs Satellite"
+              title="Toggle Map Style: CARTO Voyager vs Satellite"
             >
               <Layers className="w-3.5 h-3.5 text-amber-500" />
-              <span>{mapStyle === 'street' ? 'Satellite View' : 'Street View'}</span>
+              <span>{mapStyle === 'voyager' ? 'Satellite View' : 'Voyager View'}</span>
             </button>
           </div>
         </div>
@@ -386,7 +385,7 @@ export default function EarthDetectiveDashboard() {
         */}
         <div className="absolute top-18 sm:top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           <div className="bg-slate-950/95 text-white backdrop-blur-xl rounded-2xl px-5 sm:px-6 py-2.5 sm:py-3 shadow-2xl border border-slate-800 flex items-center divide-x divide-slate-800 animate-fadeIn">
-            
+
             {/* Column 1: Days to Permanent Wilting Point */}
             <div className="pr-4 sm:pr-5 text-center">
               <div className="flex items-center justify-center gap-1">
@@ -442,12 +441,12 @@ export default function EarthDetectiveDashboard() {
       {/* LOWER SECTION: 3 ELEGANT BENTO CARDS (Fills Bottom ~42%)  */}
       {/* ========================================================= */}
       <div className="h-[210px] sm:h-[225px] grid grid-cols-1 md:grid-cols-12 gap-3 shrink-0">
-        
+
         {/* ===================================================== */}
         {/* CARD 1 (Left, 5 cols): Location & Microclimate Bento  */}
         {/* ===================================================== */}
         <div className="md:col-span-12 lg:col-span-5 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          
+
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
@@ -481,7 +480,7 @@ export default function EarthDetectiveDashboard() {
 
           {/* 3 Micro-Metric Tiles */}
           <div className="grid grid-cols-3 gap-2">
-            
+
             {/* Tile 1: Wilting Margin */}
             <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 flex flex-col justify-between">
               <div className="w-6 h-6 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center shadow-2xs">
@@ -533,25 +532,22 @@ export default function EarthDetectiveDashboard() {
             <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-full text-[10px] font-medium text-slate-600">
               <button
                 onClick={() => setLanguage('sindhi')}
-                className={`px-2 py-0.5 rounded-full transition-all ${
-                  language === 'sindhi' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
-                }`}
+                className={`px-2 py-0.5 rounded-full transition-all ${language === 'sindhi' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
+                  }`}
               >
                 سنڌي
               </button>
               <button
                 onClick={() => setLanguage('urdu')}
-                className={`px-2 py-0.5 rounded-full transition-all ${
-                  language === 'urdu' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
-                }`}
+                className={`px-2 py-0.5 rounded-full transition-all ${language === 'urdu' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
+                  }`}
               >
                 اردو
               </button>
               <button
                 onClick={() => setLanguage('english')}
-                className={`px-2 py-0.5 rounded-full transition-all ${
-                  language === 'english' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
-                }`}
+                className={`px-2 py-0.5 rounded-full transition-all ${language === 'english' ? 'bg-white text-slate-950 font-bold shadow-2xs' : 'hover:text-slate-950'
+                  }`}
               >
                 EN
               </button>
@@ -582,14 +578,13 @@ export default function EarthDetectiveDashboard() {
         {/* CARD 2 (Middle, 3 cols): Visual Evidence Photo Card   */}
         {/* ===================================================== */}
         <div className="md:col-span-6 lg:col-span-3 bg-slate-900 rounded-2xl overflow-hidden relative shadow-2xs border border-slate-200/80 p-3.5 text-white flex flex-col justify-between group">
-          
+
           {/* Background Agricultural Crop Image with Spectral Filter */}
           <div
-            className={`absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-105 ${
-              spectralMode === 'infrared'
-                ? 'filter contrast-150 hue-rotate-[290deg] saturate-200'
-                : 'filter brightness-90 contrast-105'
-            }`}
+            className={`absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-105 ${spectralMode === 'infrared'
+              ? 'filter contrast-150 hue-rotate-[290deg] saturate-200'
+              : 'filter brightness-90 contrast-105'
+              }`}
             style={{
               backgroundImage:
                 "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80')",
@@ -627,7 +622,7 @@ export default function EarthDetectiveDashboard() {
         {/* CARD 3 (Right, 4 cols): Registered Outposts & Arc     */}
         {/* ===================================================== */}
         <div className="md:col-span-6 lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          
+
           {/* Header & Avatars */}
           <div className="flex items-start justify-between">
             <div>
