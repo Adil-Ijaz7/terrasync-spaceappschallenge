@@ -18,6 +18,9 @@ import {
   Plus,
   BrainCircuit,
   Clock,
+  Radio,
+  AlertTriangle,
+  Droplets,
 } from 'lucide-react';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { AgronomistOutput } from '@/lib/agronomist';
@@ -742,12 +745,18 @@ export default function EarthDetectiveDashboard() {
 
             <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
               <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200/60 text-amber-900">
-                <strong className="block text-amber-950 font-bold mb-1">🔍 The Ground Mystery:</strong>
+                <strong className="flex items-center gap-1.5 text-amber-950 font-bold mb-1">
+                  <Search className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>The Ground Mystery:</span>
+                </strong>
                 Ground thermometers reported standard ambient air temperatures (34°C). Yet within 72 hours, entire Basmati rice crop fields suffered irreversible wilting necrosis.
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
-                <strong className="block text-slate-900 font-bold mb-1">🛰️ NASA Orbital Evidence:</strong>
+                <strong className="flex items-center gap-1.5 text-slate-900 font-bold mb-1">
+                  <Radio className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  <span>NASA Orbital Evidence:</span>
+                </strong>
                 NASA POWER Agroclimatology satellite data uncovered severe subterranean decoupling: while surface air was mild, root-zone moisture (<code className="font-mono bg-white px-1 py-0.5 rounded border border-slate-200">GWETPROF</code>) plunged below the Permanent Wilting Point (<code className="font-mono bg-white px-1 py-0.5 rounded border border-slate-200">13.5%</code>) 3 days prior.
                 <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono text-slate-700 bg-white p-2 rounded-xl border border-slate-200">
                   <div><strong>T2M:</strong> {(telemetry?.power.temperatureC ?? 27.2).toFixed(1)}°C</div>
@@ -758,7 +767,10 @@ export default function EarthDetectiveDashboard() {
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
-                <strong className="block text-slate-900 font-bold mb-1">📊 Machine Learning Equation:</strong>
+                <strong className="flex items-center gap-1.5 text-slate-900 font-bold mb-1">
+                  <BrainCircuit className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span>Machine Learning Equation:</span>
+                </strong>
                 <p className="font-mono text-slate-800 text-[11px]">
                   dM/dt = slope({'{'}M_i{'}'}) = {prediction.dailyMoistureLossRate.toFixed(2)}%/day | R² = {prediction.statisticalR2.toFixed(2)}
                 </p>

@@ -11,6 +11,7 @@ import {
   Settings,
   Maximize2,
   Minimize2,
+  Rocket,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -91,7 +92,7 @@ export default function Navbar() {
           className="w-9 h-9 rounded-full bg-slate-950 text-white flex items-center justify-center font-bold text-xs shadow-xs cursor-default"
           title="NASA Space Apps Challenge 2026 • Earth's True Detective"
         >
-          🚀
+          <Rocket className="w-4 h-4 text-amber-400" />
         </div>
       </div>
     </aside>

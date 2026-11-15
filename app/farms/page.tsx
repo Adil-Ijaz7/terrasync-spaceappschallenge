@@ -208,8 +208,9 @@ export default function FarmsPage() {
               isPickerMode={true}
               mapStyle="voyager"
             />
-            <div className="absolute bottom-2 left-2 z-20 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 text-[11px] text-slate-700 font-medium pointer-events-none shadow-xs">
-              📍 Click on the map to drop your farm pin
+            <div className="absolute bottom-2 left-2 z-20 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 text-[11px] text-slate-700 font-medium pointer-events-none shadow-xs flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-amber-600" />
+              <span>Click on the map to drop your farm pin</span>
             </div>
           </div>
 

@@ -5,8 +5,10 @@ import { runMlPredictionModel } from '@/lib/ml-detector';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const rawTo = body.to || body.email || body.recipientEmail || body.recipient_email;
+    const to = typeof rawTo === 'string' ? rawTo.trim() : '';
+
     const {
-      to,
       farmerName = 'Dadu Smallholder Farmer',
       farmId,
       crop = 'Rice',
@@ -20,9 +22,9 @@ export async function POST(request: Request) {
       isAutoTriggered = false,
     } = body;
 
-    if (!to || typeof to !== 'string' || !to.includes('@')) {
+    if (!to || !to.includes('@')) {
       return NextResponse.json(
-        { error: 'Valid farmer email address ("to") is required.' },
+        { error: 'Valid farmer email address ("to" or "email") is required.' },
         { status: 400 }
       );
     }

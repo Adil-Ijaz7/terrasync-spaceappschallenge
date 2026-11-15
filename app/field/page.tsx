@@ -23,7 +23,8 @@ import {
   Layers,
   Clock,
   CloudRain,
-  Wind
+  Wind,
+  ChevronDown
 } from 'lucide-react';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
@@ -316,9 +317,7 @@ export default function FieldAgentPwaPage() {
                     </optgroup>
                   )}
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-                  ▼
-                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
 
