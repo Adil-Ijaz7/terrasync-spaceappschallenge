@@ -203,14 +203,26 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
               <table width="100%" role="presentation" cellspacing="8" cellpadding="0">
                 <tr>
                   <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 11px; color: #fbbf24; text-transform: uppercase; font-weight: bold;">Surface Temp</div>
-                    <div style="font-size: 26px; font-weight: 800; color: #ffffff; margin-top: 4px;">${temp.toFixed(1)}°C</div>
+                    <div style="font-size: 11px; color: #fbbf24; text-transform: uppercase; font-weight: bold;">Surface Temp (T2M)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${temp.toFixed(1)}°C</div>
                     <div style="font-size: 11px; color: #64748b; margin-top: 2px;">CERES / MERRA-2 assimilation</div>
                   </td>
                   <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
                     <div style="font-size: 11px; color: #38bdf8; text-transform: uppercase; font-weight: bold;">Root Profile Moisture</div>
-                    <div style="font-size: 26px; font-weight: 800; color: #ffffff; margin-top: 4px;">${moisture}%</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${moisture}%</div>
                     <div style="font-size: 11px; color: #f87171; margin-top: 2px;">Wilting Point Threshold: 13.5%</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
+                    <div style="font-size: 11px; color: #14b8a6; text-transform: uppercase; font-weight: bold;">Relative Humidity (RH2M)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${nasaSnapshot?.power.relativeHumidityPercent ?? 35}%</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Atmospheric Vapor Deficit</div>
+                  </td>
+                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
+                    <div style="font-size: 11px; color: #818cf8; text-transform: uppercase; font-weight: bold;">Precipitation (Rain)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${(nasaSnapshot?.power.precipitationMm ?? 0.0).toFixed(1)} mm</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">GPM / IMERG Satellite Feed</div>
                   </td>
                 </tr>
               </table>

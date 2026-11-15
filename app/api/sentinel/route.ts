@@ -29,6 +29,8 @@ export async function POST(request: Request) {
       const mlDetective = runMlDetectiveModel({
         temperatureC: temp,
         soilMoisturePercent: moisture,
+        relativeHumidityPercent: telemetry.power.relativeHumidityPercent,
+        precipitationMm: telemetry.power.precipitationMm,
         crop,
         historical7Day: telemetry.power.historical7Day,
         nearbyThreat: telemetry.eonetEvents.length > 0 ? telemetry.eonetEvents[0].title : undefined,
@@ -47,6 +49,8 @@ export async function POST(request: Request) {
         const advice = await generateAgronomistAdvice({
           temperatureC: temp,
           soilMoisturePercent: moisture,
+          relativeHumidityPercent: telemetry.power.relativeHumidityPercent,
+          precipitationMm: telemetry.power.precipitationMm,
           crop: crop.toLowerCase().includes('wheat') ? 'wheat' : 'rice',
           farmerName: farm.farmer_name,
           nearbyThreat: telemetry.eonetEvents.length > 0 ? telemetry.eonetEvents[0].title : undefined,

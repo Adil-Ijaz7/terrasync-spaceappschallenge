@@ -15,11 +15,15 @@ export interface NasaPowerData {
   temperatureC: number;
   soilMoistureFraction: number;
   soilMoisturePercent: number;
+  relativeHumidityPercent: number;
+  precipitationMm: number;
   soilCondition: 'Severely Dry' | 'Moderate Dry' | 'Optimal' | 'High Moisture' | 'Waterlogged';
   historical7Day: Array<{
     date: string;
     temperatureC: number;
     soilMoisturePercent: number;
+    relativeHumidityPercent?: number;
+    precipitationMm?: number;
   }>;
   rawData?: any;
 }
@@ -64,7 +68,7 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
   const startDateStr = formatDateToYYYYMMDD(start);
   const endDateStr = formatDateToYYYYMMDD(end);
 
-  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,GWETPROF&community=AG&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&start=${startDateStr}&end=${endDateStr}&format=JSON`;
+  const url = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,GWETPROF,RH2M,PRECTOTCORR&community=AG&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&start=${startDateStr}&end=${endDateStr}&format=JSON`;
 
   try {
     const res = await fetch(url, {
@@ -81,6 +85,8 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
     const data = await res.json();
     const t2mMap = data.properties?.parameter?.T2M || {};
     const gwetprofMap = data.properties?.parameter?.GWETPROF || {};
+    const rh2mMap = data.properties?.parameter?.RH2M || {};
+    const prectotMap = data.properties?.parameter?.PRECTOTCORR || {};
 
     const dates = Object.keys(t2mMap).filter((d) => t2mMap[d] !== -999 && gwetprofMap[d] !== -999);
 
@@ -92,6 +98,8 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
     const temp = t2mMap[latestDate] ?? 32;
     const soilFrac = gwetprofMap[latestDate] ?? 0.25;
     const soilPercent = Math.max(0, Math.min(100, Math.round(soilFrac * 100)));
+    const humidity = rh2mMap[latestDate] && rh2mMap[latestDate] !== -999 ? rh2mMap[latestDate] : 38;
+    const rain = prectotMap[latestDate] && prectotMap[latestDate] !== -999 ? prectotMap[latestDate] : 0.0;
 
     let condition: NasaPowerData['soilCondition'] = 'Optimal';
     if (soilPercent < 15) condition = 'Severely Dry';
@@ -104,6 +112,8 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
       date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`,
       temperatureC: Math.round(t2mMap[d] * 10) / 10,
       soilMoisturePercent: Math.round((gwetprofMap[d] || 0) * 100),
+      relativeHumidityPercent: Math.round(rh2mMap[d] && rh2mMap[d] !== -999 ? rh2mMap[d] : 38),
+      precipitationMm: Math.round((prectotMap[d] && prectotMap[d] !== -999 ? prectotMap[d] : 0) * 10) / 10,
     }));
 
     return {
@@ -113,6 +123,8 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
       temperatureC: Math.round(temp * 10) / 10,
       soilMoistureFraction: Math.round(soilFrac * 1000) / 1000,
       soilMoisturePercent: soilPercent,
+      relativeHumidityPercent: Math.round(humidity),
+      precipitationMm: Math.round(rain * 10) / 10,
       soilCondition: condition,
       historical7Day,
       rawData: {
@@ -126,6 +138,7 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
     const isSummer = now.getMonth() >= 4 && now.getMonth() <= 9;
     const baseTemp = isSummer ? 41.5 : 28.5;
     const baseMoisture = 14;
+    const baseHumidity = isSummer ? 28 : 42;
 
     return {
       latitude: lat,
@@ -134,15 +147,17 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
       temperatureC: baseTemp,
       soilMoistureFraction: baseMoisture / 100,
       soilMoisturePercent: baseMoisture,
+      relativeHumidityPercent: baseHumidity,
+      precipitationMm: 0.0,
       soilCondition: 'Severely Dry',
       historical7Day: [
-        { date: 'Day -6', temperatureC: baseTemp - 1, soilMoisturePercent: baseMoisture + 2 },
-        { date: 'Day -5', temperatureC: baseTemp, soilMoisturePercent: baseMoisture + 1 },
-        { date: 'Day -4', temperatureC: baseTemp + 1, soilMoisturePercent: baseMoisture },
-        { date: 'Day -3', temperatureC: baseTemp + 0.5, soilMoisturePercent: baseMoisture - 1 },
-        { date: 'Day -2', temperatureC: baseTemp + 1.5, soilMoisturePercent: baseMoisture - 2 },
-        { date: 'Day -1', temperatureC: baseTemp + 1, soilMoisturePercent: baseMoisture - 2 },
-        { date: 'Today', temperatureC: baseTemp, soilMoisturePercent: baseMoisture },
+        { date: 'Day -6', temperatureC: baseTemp - 1, soilMoisturePercent: baseMoisture + 2, relativeHumidityPercent: baseHumidity + 3, precipitationMm: 0 },
+        { date: 'Day -5', temperatureC: baseTemp, soilMoisturePercent: baseMoisture + 1, relativeHumidityPercent: baseHumidity + 2, precipitationMm: 0 },
+        { date: 'Day -4', temperatureC: baseTemp + 1, soilMoisturePercent: baseMoisture, relativeHumidityPercent: baseHumidity, precipitationMm: 0 },
+        { date: 'Day -3', temperatureC: baseTemp + 0.5, soilMoisturePercent: baseMoisture - 1, relativeHumidityPercent: baseHumidity - 1, precipitationMm: 0 },
+        { date: 'Day -2', temperatureC: baseTemp + 1.5, soilMoisturePercent: baseMoisture - 2, relativeHumidityPercent: baseHumidity - 3, precipitationMm: 0 },
+        { date: 'Day -1', temperatureC: baseTemp + 1, soilMoisturePercent: baseMoisture - 2, relativeHumidityPercent: baseHumidity - 2, precipitationMm: 0 },
+        { date: 'Today', temperatureC: baseTemp, soilMoisturePercent: baseMoisture, relativeHumidityPercent: baseHumidity, precipitationMm: 0 },
       ],
     };
   }

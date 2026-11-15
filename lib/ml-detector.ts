@@ -12,11 +12,15 @@ export interface HistoricalReading {
   date: string;
   temperatureC: number;
   soilMoisturePercent: number;
+  relativeHumidityPercent?: number;
+  precipitationMm?: number;
 }
 
 export interface MlAnomalyInput {
   temperatureC: number;
   soilMoisturePercent: number;
+  relativeHumidityPercent?: number;
+  precipitationMm?: number;
   crop?: string;
   historical7Day?: HistoricalReading[];
   nearbyThreat?: string;
@@ -28,6 +32,8 @@ export interface MlDayForecast {
   dateStr: string;
   predictedTempC: number;
   predictedMoisturePercent: number;
+  predictedHumidityPercent?: number;
+  predictedPrecipitationMm?: number;
   riskLevel: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
 }
 
@@ -107,7 +113,14 @@ function calculateLinearRegression(values: number[]): { slope: number; intercept
  * Learns from past 7 days of NASA POWER telemetry and projects next 3 to 7 days
  */
 export function runMlPredictionModel(input: MlAnomalyInput): MlPredictionResult {
-  const { temperatureC, soilMoisturePercent, crop = 'rice', historical7Day = [] } = input;
+  const { 
+    temperatureC, 
+    soilMoisturePercent, 
+    relativeHumidityPercent = 35, 
+    precipitationMm = 0, 
+    crop = 'rice', 
+    historical7Day = [] 
+  } = input;
 
   const isRice = crop.toLowerCase().includes('rice');
   const pwpThreshold = isRice ? 13.5 : 10.0; // Permanent wilting point moisture %
@@ -133,19 +146,29 @@ export function runMlPredictionModel(input: MlAnomalyInput): MlPredictionResult 
   const tempReg = calculateLinearRegression(tempSeries);
   const moistReg = calculateLinearRegression(moistureSeries);
 
-  const dailyTempChange = Math.round(tempReg.slope * 10) / 10;
-  const dailyMoistChange = Math.round(moistReg.slope * 10) / 10;
+  // Atmospheric Vapor Pressure Deficit (VPD) effect: low humidity accelerates drying
+  const humidityMultiplier = relativeHumidityPercent < 30 ? 1.25 : relativeHumidityPercent > 65 ? 0.75 : 1.0;
+  // Precipitation offsets daily loss: 1mm rain ~ +1.2% surface moisture
+  const rainOffset = precipitationMm > 0 ? Math.min(8.0, precipitationMm * 1.2) : 0;
+
+  let dailyTempChange = Math.round(tempReg.slope * 10) / 10;
+  let dailyMoistChange = Math.round((moistReg.slope * humidityMultiplier + (rainOffset > 0 ? rainOffset : 0)) * 10) / 10;
+
+  // If regression has zero slope and no rain, assume atmospheric evapotranspiration based on temp & humidity
+  if (dailyMoistChange === 0 && precipitationMm === 0) {
+    dailyMoistChange = -Math.round(Math.max(0.6, (temperatureC / 30) * (100 - relativeHumidityPercent) / 50) * 10) / 10;
+  }
 
   // Classify Trend Direction
   let trendDirection: MlPredictionResult['trendDirection'] = 'STABLE';
-  if (dailyMoistChange <= -1.2 && dailyTempChange >= 0.5) {
+  if (precipitationMm > 15 || dailyMoistChange > 1.5) {
+    trendDirection = 'SATURATING';
+  } else if (dailyMoistChange <= -1.2 && (dailyTempChange >= 0.5 || temperatureC >= 38)) {
     trendDirection = 'HEATWAVE_EXPEDITION';
   } else if (dailyMoistChange <= -1.0) {
     trendDirection = 'RAPID_DRYING';
   } else if (dailyMoistChange < -0.3) {
     trendDirection = 'MODERATE_DRYING';
-  } else if (dailyMoistChange > 1.5) {
-    trendDirection = 'SATURATING';
   }
 
   // Days to Permanent Wilting Point (PWP) forecast
@@ -186,6 +209,8 @@ export function runMlPredictionModel(input: MlAnomalyInput): MlPredictionResult 
       dateStr,
       predictedTempC: pTemp,
       predictedMoisturePercent: pMoist,
+      predictedHumidityPercent: Math.max(15, Math.min(95, Math.round(relativeHumidityPercent - dailyTempChange * 1.5 * offset))),
+      predictedPrecipitationMm: offset === 1 ? precipitationMm : 0,
       riskLevel: risk,
     });
   }

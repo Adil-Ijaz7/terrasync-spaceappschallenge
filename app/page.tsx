@@ -70,6 +70,7 @@ export default function EarthDetectiveDashboard() {
   const [showDossierModal, setShowDossierModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showAddFarmModal, setShowAddFarmModal] = useState(false);
+  const [showRawJson, setShowRawJson] = useState(false);
   const [emailStatusNote, setEmailStatusNote] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
@@ -158,6 +159,8 @@ export default function EarthDetectiveDashboard() {
     return runMlDetectiveModel({
       temperatureC: temp,
       soilMoisturePercent: moisture,
+      relativeHumidityPercent: telemetry?.power.relativeHumidityPercent,
+      precipitationMm: telemetry?.power.precipitationMm,
       crop: cropFilter !== 'all' ? cropFilter.toLowerCase() : 'rice',
       historical7Day: telemetry?.power.historical7Day,
       referenceDate: telemetry?.power.date,
@@ -309,6 +312,7 @@ export default function EarthDetectiveDashboard() {
           selectedLng={selectedLng}
           onSelectCoordinates={handleCoordinateSelect}
           farms={displayedFarms}
+          eonetEvents={telemetry?.eonetEvents || []}
           onSelectFarm={handleSelectFarm}
           mapStyle={mapStyle}
         />
@@ -478,7 +482,7 @@ export default function EarthDetectiveDashboard() {
                 {selectedSectorName}
               </h2>
               <p className="text-[11px] text-slate-500 font-mono">
-                {selectedLat.toFixed(4)}°N, {selectedLng.toFixed(4)}°E • Sector {selectedSectorCode}
+                {selectedLat.toFixed(4)}°N, {selectedLng.toFixed(4)}°E • RH {telemetry?.power.relativeHumidityPercent ?? 35}% • Rain {telemetry?.power.precipitationMm ?? 0}mm
               </p>
             </div>
 
@@ -759,6 +763,12 @@ export default function EarthDetectiveDashboard() {
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
                 <strong className="block text-slate-900 font-bold mb-1">🛰️ NASA Orbital Evidence:</strong>
                 NASA POWER Agroclimatology satellite data uncovered severe subterranean decoupling: while surface air was mild, root-zone moisture (<code className="font-mono bg-white px-1 py-0.5 rounded border border-slate-200">GWETPROF</code>) plunged below the Permanent Wilting Point (<code className="font-mono bg-white px-1 py-0.5 rounded border border-slate-200">13.5%</code>) 3 days prior.
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono text-slate-700 bg-white p-2 rounded-xl border border-slate-200">
+                  <div><strong>T2M:</strong> {(telemetry?.power.temperatureC ?? 27.2).toFixed(1)}°C</div>
+                  <div><strong>GWETPROF:</strong> {telemetry?.power.soilMoisturePercent ?? 29}%</div>
+                  <div><strong>RH2M:</strong> {telemetry?.power.relativeHumidityPercent ?? 35}%</div>
+                  <div><strong>PRECTOTCORR:</strong> {telemetry?.power.precipitationMm ?? 0.0} mm</div>
+                </div>
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
@@ -769,6 +779,44 @@ export default function EarthDetectiveDashboard() {
                 <p className="mt-1">
                   Days to PWP = (M_current - PWP_limit) / |dM/dt| = <strong>{prediction.predictedDaysToPWP.toFixed(1)} Days Remaining</strong>.
                 </p>
+              </div>
+
+              {/* NASA Open Science Raw Telemetry Inspector */}
+              <div className="border border-slate-200 rounded-2xl p-3 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 block">NASA Open Science Verification</span>
+                    <span className="text-[10px] text-slate-500">Missions: NASA CERES, Goddard MERRA-2, GPM IMERG, EONET</span>
+                  </div>
+                  <button
+                    onClick={() => setShowRawJson(!showRawJson)}
+                    className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-slate-200 rounded-lg hover:border-slate-400 text-slate-700 transition-all shadow-2xs"
+                  >
+                    {showRawJson ? 'Hide Payload' : 'Inspect Live JSON'}
+                  </button>
+                </div>
+
+                {showRawJson && (
+                  <pre className="mt-2.5 p-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-[10px] max-h-48 overflow-y-auto leading-relaxed border border-slate-800">
+                    {JSON.stringify(
+                      {
+                        mission: 'NASA POWER Agroclimatology (CERES & MERRA-2) + EONET (GSFC)',
+                        targetCoordinates: { latitude: selectedLat, longitude: selectedLng },
+                        timestamp: telemetry?.timestamp || new Date().toISOString(),
+                        parameters: {
+                          T2M_Surface_Temp_C: telemetry?.power.temperatureC,
+                          GWETPROF_Profile_Soil_Moisture_Pct: telemetry?.power.soilMoisturePercent,
+                          RH2M_Relative_Humidity_Pct: telemetry?.power.relativeHumidityPercent,
+                          PRECTOTCORR_Precipitation_mm_day: telemetry?.power.precipitationMm,
+                        },
+                        activeEonetHazardsCount: telemetry?.eonetEvents?.length || 0,
+                        nearestHazard: telemetry?.eonetEvents?.[0] || 'None in immediate 250km radius',
+                      },
+                      null,
+                      2
+                    )}
+                  </pre>
+                )}
               </div>
             </div>
 

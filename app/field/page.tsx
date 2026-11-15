@@ -21,7 +21,9 @@ import {
   Compass,
   Radio,
   Layers,
-  Clock
+  Clock,
+  CloudRain,
+  Wind
 } from 'lucide-react';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
@@ -67,6 +69,8 @@ export default function FieldAgentPwaPage() {
         const pred = runMlPredictionModel({
           temperatureC: data.telemetry.power.temperatureC,
           soilMoisturePercent: data.telemetry.power.soilMoisturePercent,
+          relativeHumidityPercent: data.telemetry.power.relativeHumidityPercent,
+          precipitationMm: data.telemetry.power.precipitationMm,
           crop: currentCrop,
           historical7Day: data.telemetry.power.historical7Day,
         });
@@ -331,42 +335,71 @@ export default function FieldAgentPwaPage() {
                 <span className="text-xs font-medium">Querying NASA Agroclimatology Feed...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Surface Temperature */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
                   <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                    <Thermometer className="w-4 h-4 text-orange-500" />
+                    <Thermometer className="w-3.5 h-3.5 text-orange-500" />
                     <span>Surface Temp (2m)</span>
                   </span>
-                  <div className="text-2xl font-bold text-slate-900 mt-2">
+                  <div className="text-xl font-bold text-slate-900 mt-1.5">
                     {(telemetry?.power.temperatureC ?? 27.2).toFixed(1)}°C
                   </div>
-                  <span className="text-[11px] text-slate-400 mt-1">Thermal Stress Threshold: 38°C</span>
+                  <span className="text-[10px] text-slate-400 mt-1">Thermal Limit: 38°C</span>
                 </div>
 
                 {/* Root Zone Moisture */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
                   <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                    <Droplets className="w-4 h-4 text-sky-500" />
+                    <Droplets className="w-3.5 h-3.5 text-sky-500" />
                     <span>Root Moisture</span>
                   </span>
-                  <div className="text-2xl font-bold text-slate-900 mt-2 flex items-center gap-2">
+                  <div className="text-xl font-bold text-slate-900 mt-1.5 flex items-center gap-1.5">
                     <span>{telemetry?.power.soilMoisturePercent ?? 29}%</span>
                     {(telemetry?.power.soilMoisturePercent ?? 29) <= 15 ? (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
                         BREACH
                       </span>
                     ) : (telemetry?.power.soilMoisturePercent ?? 29) <= 25 ? (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
                         WARNING
                       </span>
                     ) : (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
                         OPTIMAL
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-400 mt-1">PWP Baseline: 13.5% (Rice)</span>
+                  <span className="text-[10px] text-slate-400 mt-1">PWP: 13.5% (Rice)</span>
+                </div>
+
+                {/* Relative Humidity (RH2M) */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                    <Wind className="w-3.5 h-3.5 text-teal-500" />
+                    <span>Relative Humidity</span>
+                  </span>
+                  <div className="text-xl font-bold text-slate-900 mt-1.5 flex items-center gap-1.5">
+                    <span>{telemetry?.power.relativeHumidityPercent ?? 35}%</span>
+                    {(telemetry?.power.relativeHumidityPercent ?? 35) <= 25 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                        DRY WIND
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1">MERRA-2 Assimilation</span>
+                </div>
+
+                {/* Precipitation (PRECTOTCORR) */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                    <CloudRain className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Precipitation</span>
+                  </span>
+                  <div className="text-xl font-bold text-slate-900 mt-1.5">
+                    {(telemetry?.power.precipitationMm ?? 0.0).toFixed(1)} <span className="text-xs font-normal text-slate-500">mm/d</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-1">GPM / IMERG Estimate</span>
                 </div>
               </div>
             )}

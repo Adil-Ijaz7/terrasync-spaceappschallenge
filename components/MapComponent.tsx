@@ -5,12 +5,14 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { FarmRecord } from '@/lib/supabase';
+import { NasaEonetEvent } from '@/lib/nasa';
 
 interface MapProps {
   selectedLat: number;
   selectedLng: number;
   onSelectCoordinates: (lat: number, lng: number) => void;
   farms: FarmRecord[];
+  eonetEvents?: NasaEonetEvent[];
   onSelectFarm?: (farm: FarmRecord) => void;
   mapStyle?: 'voyager' | 'satellite' | 'street';
   isPickerMode?: boolean;
@@ -79,6 +81,23 @@ const createDroppedFarmPinIcon = () =>
     iconAnchor: [16, 16],
   });
 
+// NASA EONET Active Hazard Pin (Pulsing Crimson Sentinel marker)
+const createHazardRadarPinIcon = (cat: string) =>
+  L.divIcon({
+    className: 'eonet-hazard-pin',
+    html: `
+      <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer group">
+        <div class="absolute w-8 h-8 rounded-full bg-rose-500/35 border-2 border-rose-500 animate-ping"></div>
+        <div class="absolute w-5 h-5 rounded-full bg-rose-500/25 blur-[1px]"></div>
+        <div class="relative w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center text-[9px] font-bold shadow-md shadow-rose-600/50 border border-white">
+          ⚠️
+        </div>
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+
 function MapEventsHandler({ onSelectCoordinates }: { onSelectCoordinates: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -110,6 +129,7 @@ export default function MapComponent({
   selectedLng,
   onSelectCoordinates,
   farms = [],
+  eonetEvents = [],
   onSelectFarm,
   mapStyle = 'voyager',
   isPickerMode = false,
@@ -197,6 +217,42 @@ export default function MapComponent({
                     <div className="text-slate-400 text-[10px] font-mono">
                       {farm.crop_type || 'Rice'} • {farm.latitude.toFixed(4)}°N, {farm.longitude.toFixed(4)}°E
                     </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+        {/* NASA EONET Active Natural Hazard Pins */}
+        {Array.isArray(eonetEvents) &&
+          eonetEvents.map((ev) => {
+            if (!ev.coordinates || !Array.isArray(ev.coordinates) || ev.coordinates.length < 2) return null;
+            const [evLat, evLng] = ev.coordinates;
+            return (
+              <Marker
+                key={ev.id}
+                position={[evLat, evLng]}
+                icon={createHazardRadarPinIcon(ev.category)}
+              >
+                <Popup className="custom-leaflet-popup">
+                  <div className="p-2 text-xs font-sans text-slate-800 space-y-1">
+                    <div className="text-rose-600 font-bold flex items-center gap-1 text-[11px]">
+                      <span>🛰️ NASA EONET Hazard</span>
+                    </div>
+                    <div className="font-semibold text-slate-900 leading-snug">{ev.title}</div>
+                    <div className="text-slate-500 text-[10px]">
+                      Category: {ev.category} {ev.distanceKm !== undefined ? `• ${ev.distanceKm} km from target` : ''}
+                    </div>
+                    {ev.url && (
+                      <a
+                        href={ev.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-[10px] text-amber-600 hover:text-amber-700 underline font-medium pt-0.5"
+                      >
+                        NASA Observatory Bulletin &rarr;
+                      </a>
+                    )}
                   </div>
                 </Popup>
               </Marker>

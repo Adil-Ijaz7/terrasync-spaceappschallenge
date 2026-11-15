@@ -23,6 +23,8 @@ export async function POST(request: Request) {
     const advice = await generateAgronomistAdvice({
       temperatureC: telemetry.power.temperatureC,
       soilMoisturePercent: telemetry.power.soilMoisturePercent,
+      relativeHumidityPercent: telemetry.power.relativeHumidityPercent,
+      precipitationMm: telemetry.power.precipitationMm,
       crop,
       farmerName,
       nearbyThreat: closestThreat,

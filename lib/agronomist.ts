@@ -9,6 +9,8 @@
 export interface AgronomistInput {
   temperatureC: number;
   soilMoisturePercent: number;
+  relativeHumidityPercent?: number;
+  precipitationMm?: number;
   crop?: 'rice' | 'wheat' | 'cotton' | 'general';
   farmerName?: string;
   nearbyThreat?: string;
@@ -44,9 +46,18 @@ RULES:
  * 100% Free, runs locally, zero keys required, highly accurate for Sindh agroclimatic zones.
  */
 export function generateLocalAgronomistAdvice(input: AgronomistInput): AgronomistOutput {
-  const { temperatureC, soilMoisturePercent, crop = 'rice', nearbyThreat } = input;
+  const { 
+    temperatureC, 
+    soilMoisturePercent, 
+    relativeHumidityPercent = 35, 
+    precipitationMm = 0, 
+    crop = 'rice', 
+    nearbyThreat 
+  } = input;
   const temp = Math.round(temperatureC);
   const moisture = Math.round(soilMoisturePercent);
+  const humidity = Math.round(relativeHumidityPercent);
+  const rain = Math.round(precipitationMm * 10) / 10;
 
   let romanUrdu = '';
   let sindhi = '';
@@ -62,19 +73,28 @@ export function generateLocalAgronomistAdvice(input: AgronomistInput): Agronomis
     sindhi = `[خبردار] ويجهو طوفاني خطرو (${nearbyThreat}) ۽ تيز برسات جو امڪان. [عمل] ٻنن کي مضبوط ڪريو ۽ ٻني مان پاڻي نيڪال جا رستا ترت کوليو.`;
     urdu = `[الرٹ] قریبی موسمی خطرہ (${nearbyThreat}) اور بارش کا امکان ہے۔ [اقدام] کھیت کے بنوں کو مضبوط کریں اور نکاسی آب کے راستے فوری کھولیں۔`;
     englishExp = `NASA EONET detected ${nearbyThreat}. Reinforce field embankments and clear drainage channels immediately to prevent flash inundation.`;
+  } else if (rain >= 5.0) {
+    urgency = 'MEDIUM';
+    isCritical = false;
+    romanUrdu = `[ALERT] NASA satellite ne barish (${rain}mm) record ki hai. [ACTION] Aabpashi moakhar karein aur pani jama hone se rokain.`;
+    sindhi = `[خبردار] ناسا سيٽلائيٽ وسيلي برسات (${rain}mm) رڪارڊ ٿي آهي. [عمل] هٿراڌو پاڻي ڏيڻ بند ڪريو ۽ ٻني مان واڌو پاڻي نيڪال رکو.`;
+    urdu = `[موسمی اطلاع] ناسا سیٹلائٹ نے بارش (${rain}mm) ریکارڈ کی ہے۔ [اقدام] اضافی آبپاشی روک دیں تاکہ زمین میں پانی کھڑا نہ ہو۔`;
+    englishExp = `NASA satellite rain assimilation recorded ${rain}mm precipitation. Suspend scheduled canal pumping to prevent root hypoxia.`;
   } else if (temp >= 38 && moisture <= 18) {
     urgency = 'CRITICAL';
     isCritical = true;
+    const humidityNoteSindhi = humidity <= 25 ? ' سڪل لُڪ ۽ ' : ' ';
+    const humidityNoteUrdu = humidity <= 25 ? ' خشک لو اور ' : ' ';
     if (crop === 'rice') {
-      romanUrdu = `[ALERT] Zameen ki nami bohat kam (${moisture}%) aur shadeed garmi (${temp}°C) hai. [ACTION] Dhaan ko sokhay se bachanay k liye sham ko flood irrigation karein.`;
-      sindhi = `[خبردار] ٻنيءَ ۾ پاڻي جي کوٽ (${moisture}%) ۽ سخت گرمي (${temp}°C) آهي. [عمل] سارين کي سُڪڻ کان بچائڻ لاءِ شام جو پاڻي ضرور لڳايو.`;
-      urdu = `[الرٹ] زمین میں نمی بہت کم (${moisture}%) اور شدید گرمی (${temp}°C) ہے۔ [اقدام] دھان کو جلنے سے بچانے کیلئے شام کو فوری پانی لگائیں۔`;
+      romanUrdu = `[ALERT] Zameen ki nami bohat kam (${moisture}%) aur shadeed garmi (${temp}°C, Nami: ${humidity}%) hai. [ACTION] Dhaan ko sokhay se bachanay k liye sham ko flood irrigation karein.`;
+      sindhi = `[خبردار] ٻنيءَ ۾ پاڻي جي کوٽ (${moisture}%)،${humidityNoteSindhi}سخت گرمي (${temp}°C) آهي. [عمل] سارين کي سُڪڻ کان بچائڻ لاءِ شام جو پاڻي ضرور لڳايو.`;
+      urdu = `[الرٹ] زمین میں نمی بہت کم (${moisture}%)،${humidityNoteUrdu}شدید گرمی (${temp}°C) ہے۔ [اقدام] دھان کو جلنے سے بچانے کیلئے شام کو فوری پانی لگائیں۔`;
     } else {
       romanUrdu = `[ALERT] Zameen ki nami bohat kam (${moisture}%) aur shadeed garmi (${temp}°C) hai. [ACTION] Fasal ko jalne se bachanay k liye agle 12 ghante mein aabpashi karein.`;
       sindhi = `[خبردار] زمين ۾ سخت گرمي (${temp}°C) ۽ نمي تمام گهٽ (${moisture}%) آهي. [عمل] فصل کي سڙڻ کان بچائڻ لاءِ ترت هلڪو پاڻي ڏيو.`;
       urdu = `[الرٹ] شدید گرمی (${temp}°C) اور زمین میں نمی کی شدید کمی (${moisture}%) ہے۔ [اقدام] فصل کو سوکھنے سے بچانے کیلئے اگلے 12 گھنٹے میں پانی دیں۔`;
     }
-    englishExp = `Extreme heat (${temp}°C) combined with critically low soil moisture (${moisture}%) threatens wilting and yield shock. Schedule evening irrigation immediately.`;
+    englishExp = `Extreme heat (${temp}°C) with low humidity (${humidity}%) and critical moisture depletion (${moisture}%) threatens wilting necrosis. Schedule twilight irrigation immediately.`;
   } else if (temp >= 36 && moisture <= 25) {
     urgency = 'HIGH';
     isCritical = true;
