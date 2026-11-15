@@ -1,99 +1,117 @@
 # TerraSync: Earth's True Detective 🛰️🔍🌾
 
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.4.6-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4.3-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![NASA Open Science](https://img.shields.io/badge/NASA-Open_Science_Data-E03C31?style=for-the-badge&logo=nasa)](https://power.larc.nasa.gov/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
 > **NASA Space Apps Challenge 2026**  
-> **Challenge Topic:** Earth's True Detective  
-> **Focus Region:** Dadu District, Sindh, Pakistan (26.7341°N, 67.7795°E)  
-> **Core Innovation:** Orbital Forensic Telemetry + Machine Learning Multi-Day Predictive Forecasting + Autonomous Farmer Email Alerts (Sindhi, Urdu & English)
+> **Challenge Track:** Earth's True Detective  
+> **Target Region:** District Dadu, Sindh, Pakistan (26.7341°N, 67.7795°E) with Worldwide Planetary Telemetry  
+> **Core Innovation:** Orbital Forensic Telemetry + Machine Learning Multi-Day Predictive Forecasting + Autonomous Farmer Email Alerts in Native Sindhi (سنڌي), Urdu (اردو), and English.  
+
+📖 **Full Non-Technical & Technical Architecture Report:** See [`PROJECT_DOCUMENTATION.md`](./PROJECT_DOCUMENTATION.md)
 
 ---
 
-## 1. Challenge Alignment: "Earth's True Detective"
+## 1. Executive Summary & Challenge Alignment
 
-### The Ground Mystery
-In rural agricultural corridors like Dadu, Sindh, farmers frequently suffer catastrophic crop wilting (such as rice in Kharif season or wheat in Rabi season) despite standard weather reports claiming "normal" temperatures. Ground weather observations only track ambient air, leaving agriculturalists completely blind to subterranean drought, evaporative demand, and root desiccation happening days before physical wilting is visible.
+### The Ground Mystery: The "Ghost Wilting" of Agricultural Basins
+In vulnerable agricultural regions like Dadu, Sindh, farmers frequently suffer sudden, catastrophic crop necrosis. Traditional weather forecasts only report ambient air temperatures, leaving farmers blind to subterranean root desiccation and soil wetness depletion occurring days before leaves physically wilt.
 
-### How NASA Satellites & ML Act as the "Detective"
-TerraSync deploys NASA orbital Earth observation missions (**NASA POWER Agroclimatology & NASA EONET**) as an orbital forensic detective:
-1. **Uncovering the Hidden Suspect:** The platform detects the **decoupling of 2-meter surface temperature ($T_{2M}$) from root-zone profile soil moisture ($\theta_{\text{soil}}$, GWETPROF)** days before visual crop damage appears.
-2. **Machine Learning Predictive Forensics:** Rather than merely reacting to current readings, TerraSync's built-in **Time-Series Regression Engine** learns from past rolling 7-day NASA readings to extrapolate future microclimate trajectories, calculating daily drying rate ($\frac{dM}{dt}$), thermal velocity ($\frac{dT}{dt}$), and predicting the **exact Days until Permanent Wilting Point (PWP)**.
-3. **The Autonomous Email Verdict:** When an anomaly is detected or the ML engine predicts a wilting breach within 3 days, the **Autonomous Sentinel Daemon automatically generates and dispatches comprehensive, multilingual HTML email alerts** in **Native Sindhi (سنڌي)**, **Native Urdu (اردو)**, and **English** directly to registered farmers and agricultural extension officers.
-
----
-
-## 2. Machine Learning Predictive Engine (`lib/ml-detector.ts`)
-
-TerraSync embeds an Ordinary Least Squares (OLS) Time-Series Regression and Multivariate Stress Classifier:
-- **Historical Learning Window:** 7-Day rolling daily sequence of NASA POWER telemetry:
-  $$\mathbf{D} = \left\{ (t_i, T_i, M_i) \right\}_{i=-7}^{0}$$
-- **Linear Trend Extrapolation:**
-  $$\frac{dM}{dt} = \text{slope}(\{M_i\}), \quad \frac{dT}{dt} = \text{slope}(\{T_i\}), \quad R^2 = 1 - \frac{SS_{\text{res}}}{SS_{\text{tot}}}$$
-- **Outputs & Projections:**
-  - **3-Day & 7-Day Day-by-Day Forecast:** Projecting daily temperatures and soil moisture levels.
-  - **PWP Breach Countdown:** Calculates remaining margin to Permanent Wilting Point ($13.5\%$ for Rice, $10.0\%$ for Wheat) divided by daily consumption rate.
-  - **Trend Classification:** `RAPID_DRYING`, `HEATWAVE_EXPEDITION`, `MODERATE_DRYING`, `STABLE`, or `SATURATING`.
-  - **Model Confidence:** $88\%\text{--}98\%$ calibrated against regression goodness-of-fit ($R^2$).
-  - **Automated Dispatch Trigger:** Fires when projected wilt countdown $\le 3.0$ days or thermal stress anomaly score $> 75\%$.
+### The Solution: NASA Orbital Forensics + Machine Learning
+TerraSync transforms NASA satellite infrastructure (**NASA POWER Agroclimatology & NASA EONET v3**) into an orbital detective:
+1. **Detects Subterranean Decoupling:** Identifies when root profile moisture (`GWETPROF`) drops below the Permanent Wilting Point ($PWP$) while surface air temperatures appear deceivingly normal.
+2. **Machine Learning Predictive Forensics:** Employs Ordinary Least Squares (OLS) time-series regression across past 7-day readings to project the next 3 to 7 days, estimating the daily drying velocity ($\frac{dM}{dt}$) and calculating an exact **Countdown to Lethal Wilting ($t_{\text{PWP}}$)**.
+3. **Autonomous Vernacular Email Alerts:** Dispatches beautifully formatted, light-mode HTML advisory emails directly to registered smallholders in their native languages: **Sindhi (سنڌي)**, **Urdu (اردو)**, and **English**, complete with audio voice synthesis.
 
 ---
 
-## 3. Automated Farmer Email Alert System (`lib/email-service.ts`)
+## 2. Core Features & Capabilities
 
-### Why Email Replaced Legacy SMS/Chat:
-- **Institutional Reliability:** No cellular carrier blocks, character count bottlenecks, or third-party phone API restrictions.
-- **Rich Data Visualizations:** Farmers receive full HTML emails featuring live NASA telemetry cards, a **3-day projected microclimate table**, and color-coded risk indicators.
-- **Multilingual Clarity:** Full, uncompressed guidance in **Native Sindhi (سنڌي)** and **Native Urdu (اردو)** with technical English synthesis.
-- **Nodemailer SMTP + Verified Simulation:**
-  - Configurable via standard SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` in `.env.local`).
-  - Seamless zero-config simulation mode with an interactive **"Inspect HTML" modal** in the web UI for demonstrations.
-
----
-
-## 4. Multi-Page Architecture
-
-1. **🛰️ Command Center (`/`):** Fullscreen interactive Leaflet satellite map, HUD coordinates crosshair, NASA telemetry bento grid, **3-Day ML Predictive Forecast Box**, native voice synthesis, and one-click email alert dispatcher.
-2. **🌾 Farm Registry (`/farms`):** Smallholder farmer registry across Dadu, Johi, Mehar, Sehwan, and KN Shah, mapping GPS coordinates, crop varieties, and verified alert emails.
-3. **🔔 Predictions & Alerts Audit (`/alerts`):** Complete historical audit trail of all dispatched automated emails with ML PWP breach tags and text-to-speech audio playback.
-4. **📱 Field Agent Mobile PWA (`/field`):** Mobile interface with device GPS integration for field officers to run satellite diagnostics and trigger on-field email warnings.
-5. **⚙️ ML Engine & Settings (`/settings`):** Technical documentation of the ML regression model, SMTP email configuration guide, PostgreSQL database schema, and NASA citations.
+- 🛰️ **Multi-Layer Planetary Map:** Toggle seamlessly between **CARTO Voyager**, **Google Hybrid**, and **Satellite Aerial** views with global zoom and clickable planetary coordinates.
+- 🌊 **NASA EONET Planetary Hazard Radar:** Live worldwide tracking of active Floods, Severe Storms, Wildfires, and Volcanoes with animated color-coded markers and intelligent $\le 150\text{ km}$ local agricultural bounding.
+- 🧠 **ML Predictive Time-Series Panel:** Instantaneous calculation of daily loss rates ($\%/d$), statistical confidence ($R^2$), and 3-day projected temperatures and moisture levels.
+- 🌾 **Agricultural Farm Registry:** Map-based coordinate pin dropper enabling farmers to register their outposts with verified email addresses.
+- 📧 **Automated Daily Email Dispatch Gateway:** Scheduled autonomous broadcast system that pulls live NASA telemetry and delivers customized emails to registered outposts every morning at a scheduled time (e.g. 06:00 AM PKT).
+- 📱 **Field Agent Mobile PWA:** Responsive, touch-optimized mobile console with device GPS integration for on-field agronomists.
+- 🔊 **Multilingual Voice Playback:** Web Speech API integration providing spoken audio advisories in Sindhi and Urdu.
 
 ---
 
-## 5. PostgreSQL Database Schema (Supabase)
+## 3. Technology Stack
 
-```sql
--- Table 1: Farm Outposts
-CREATE TABLE IF NOT EXISTS public.farms (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    farmer_name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
-    region TEXT DEFAULT 'Dadu, Sindh',
-    crop_type TEXT DEFAULT 'Rice',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
+- **Framework:** Next.js 16 (Turbopack engine, App Router, React 19)
+- **Styling & UI:** Tailwind CSS 4, Lucide React icons, Custom Light Bento Cards
+- **Geographic Information System:** Leaflet & React-Leaflet with CARTO Basemaps & Google Maps Engine
+- **Data Assimilation:** NASA POWER Agroclimatology REST API + NASA GSFC EONET v3 REST API
+- **Machine Learning Engine:** Client & Server-side Ordinary Least Squares (OLS) Time-Series Regression
+- **Email Delivery:** Nodemailer SMTP Gateway with HTML template architecture
+- **Database & Persistence:** Supabase PostgreSQL Cloud Schema + Resilient Mock Fallback
 
--- Table 2: AI & ML Agronomist Email Alerts
-CREATE TABLE IF NOT EXISTS public.ai_alerts (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    farm_id UUID REFERENCES public.farms(id) ON DELETE CASCADE,
-    nasa_data_snapshot JSONB NOT NULL,
-    ai_generated_advice TEXT NOT NULL,
-    email_status TEXT DEFAULT 'delivered',
-    recipient_email TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
+---
+
+## 4. Live Deployment Guide (Vercel)
+
+TerraSync is optimized for zero-configuration, 1-click deployment on **Vercel** directly connected to this GitHub repository.
+
+### Step 1: Import Project into Vercel
+1. Log in to [Vercel](https://vercel.com/) and click **"Add New..." > "Project"**.
+2. Select your GitHub repository: `Adil-Ijaz7/terrasync-spaceappschallenge`.
+3. Framework Preset will automatically detect **Next.js**.
+
+### Step 2: Configure Environment Variables
+In the Vercel project configuration, add the following Environment Variables:
+
+| Variable Name | Description | Example / Recommended Value |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_CARTO_API_KEY` | CARTO Basemaps Tile API Key | `cb1_5911_1_9c76b37cd4d732d8144e0786` |
+| `SMTP_HOST` | Email SMTP Server Host | `smtp.gmail.com` |
+| `SMTP_PORT` | Email SMTP Port | `465` (SSL) or `587` (TLS) |
+| `SMTP_USER` | Verified Email Address | `your-email@gmail.com` |
+| `SMTP_PASS` | Gmail App Password (16 chars) | `xxxx xxxx xxxx xxxx` |
+| `SMTP_FROM` | Sender Name & Address | `"TerraSync Orbital Sentinel" <your-email@gmail.com>` |
+| `NEXT_PUBLIC_SUPABASE_URL` | *(Optional)* Supabase Cloud URL | `https://xyz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(Optional)* Supabase Public Key | `your_anon_key` |
+
+> **Note on Gmail:** To generate a Gmail App Password, enable 2-Factor Authentication on your Google Account, navigate to **Security > App passwords**, generate a key under name "TerraSync", and paste the 16-character code as `SMTP_PASS`.
+
+### Step 3: Deploy
+Click **"Deploy"**. Vercel will run `next build`, optimize all 15 static/dynamic routes, and provide your live production URL within 60 seconds!
+
+---
+
+## 5. Local Development Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Adil-Ijaz7/terrasync-spaceappschallenge.git
+cd terrasync-spaceappschallenge
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy environment variables template
+cp .env.example .env.local
+# (Fill in your CARTO API key and SMTP credentials in .env.local)
+
+# 4. Run the development server
+npm run dev
+
+# 5. Open your browser
+# Navigate to http://localhost:3000
 ```
 
 ---
 
-## 6. Mandatory NASA Citations
+## 6. NASA Open Science Data Citations
 
-1. *"Agroclimatology data (T2M, GWETPROF, ALLSKY_SFC_SW_DWN) were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program."*
-2. *"Live natural event tracking was provided by the Earth Observatory Natural Event Tracker (EONET v3), leveraging NASA's open API."*
+1. *Agroclimatology data (T2M, GWETPROF, RH2M, PRECTOTCORR) were obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.*
+2. *Natural hazard tracking is powered by the Earth Observatory Natural Event Tracker (EONET v3), managed by NASA Goddard Space Flight Center (GSFC).*
 
 ---
 
 ## 7. License
-MIT License - Open Source for NASA Space Apps Challenge 2026.
-#
+This project is open-source under the **MIT License** for the NASA Space Apps Challenge 2026.
