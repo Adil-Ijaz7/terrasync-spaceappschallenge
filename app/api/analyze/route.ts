@@ -30,12 +30,17 @@ export async function POST(request: Request) {
       nearbyThreat: closestThreat,
     });
 
+    const isDaduRegion = lat >= 25.5 && lat <= 27.8 && lng >= 66.5 && lng <= 68.8;
+    const targetRegion = isDaduRegion
+      ? 'Dadu & Indus Basin, Sindh, Pakistan'
+      : `${lat >= 0 ? `${lat.toFixed(2)}°N` : `${Math.abs(lat).toFixed(2)}°S`}, ${lng >= 0 ? `${lng.toFixed(2)}°E` : `${Math.abs(lng).toFixed(2)}°W`} (NASA Planetary Grid)`;
+
     return NextResponse.json({
       success: true,
       coordinates: { lat, lng },
       telemetry,
       advice,
-      targetRegion: 'Dadu, Sindh, Pakistan',
+      targetRegion,
       processedAt: new Date().toISOString(),
     });
   } catch (error: any) {

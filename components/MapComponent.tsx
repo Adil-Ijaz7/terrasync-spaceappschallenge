@@ -81,22 +81,38 @@ const createDroppedFarmPinIcon = () =>
     iconAnchor: [16, 16],
   });
 
-// NASA EONET Active Hazard Pin (Pulsing Crimson Sentinel marker)
-const createHazardRadarPinIcon = (cat: string) =>
-  L.divIcon({
+// NASA EONET Planetary Hazard Pin (Color-coded by natural disaster category: Floods, Storms, Wildfires, Volcanoes)
+const createHazardRadarPinIcon = (cat: string) => {
+  const lower = cat.toLowerCase();
+  const isFlood = lower.includes('flood');
+  const isStorm = lower.includes('storm') || lower.includes('cyclone') || lower.includes('typhoon') || lower.includes('hurricane');
+  const isFire = lower.includes('fire');
+  const isVolcano = lower.includes('volcano');
+
+  const iconEmoji = isFlood ? '🌊' : isStorm ? '🌀' : isFire ? '🔥' : isVolcano ? '🌋' : '⚠️';
+  const pulseColor = isFlood 
+    ? 'bg-sky-500/35 border-sky-500' 
+    : isStorm 
+    ? 'bg-indigo-500/35 border-indigo-500' 
+    : isFire 
+    ? 'bg-orange-500/35 border-orange-500' 
+    : 'bg-rose-500/35 border-rose-500';
+  const bgBadge = isFlood ? 'bg-sky-600' : isStorm ? 'bg-indigo-600' : isFire ? 'bg-orange-600' : 'bg-rose-600';
+
+  return L.divIcon({
     className: 'eonet-hazard-pin',
     html: `
       <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer group">
-        <div class="absolute w-8 h-8 rounded-full bg-rose-500/35 border-2 border-rose-500 animate-ping"></div>
-        <div class="absolute w-5 h-5 rounded-full bg-rose-500/25 blur-[1px]"></div>
-        <div class="relative w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center text-[9px] font-bold shadow-md shadow-rose-600/50 border border-white">
-          ⚠️
+        <div class="absolute w-8 h-8 rounded-full ${pulseColor} border animate-ping"></div>
+        <div class="relative w-5 h-5 rounded-full ${bgBadge} text-white flex items-center justify-center text-[10px] font-bold shadow-md border-2 border-white transition-transform group-hover:scale-125">
+          ${iconEmoji}
         </div>
       </div>
     `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
+};
 
 function MapEventsHandler({ onSelectCoordinates }: { onSelectCoordinates: (lat: number, lng: number) => void }) {
   useMapEvents({
@@ -115,7 +131,7 @@ function MapRecenter({ lat, lng }: { lat: number; lng: number }) {
     if (!map) return;
     try {
       const currentZoom = map.getZoom();
-      const targetZoom = currentZoom < 10 ? 11 : currentZoom;
+      const targetZoom = currentZoom < 4 ? 5 : currentZoom;
       map.flyTo([lat, lng], targetZoom, { duration: 1.0 });
     } catch (e) {
       // Safe guard against unmount mid-animation
@@ -183,7 +199,9 @@ export default function MapComponent({
     <div ref={containerRef} className="relative w-full h-full bg-[#f1f5f4] overflow-hidden">
       <MapContainer
         center={[selectedLat, selectedLng]}
-        zoom={11}
+        zoom={6}
+        minZoom={2}
+        maxZoom={19}
         scrollWheelZoom={true}
         zoomControl={false}
         className="w-full h-full"
@@ -250,24 +268,37 @@ export default function MapComponent({
                 icon={createHazardRadarPinIcon(ev.category)}
               >
                 <Popup className="custom-leaflet-popup">
-                  <div className="p-2 text-xs font-sans text-slate-800 space-y-1">
+                  <div className="p-2 text-xs font-sans text-slate-800 space-y-1.5 min-w-[200px]">
                     <div className="text-rose-600 font-bold flex items-center gap-1 text-[11px]">
-                      <span>🛰️ NASA EONET Hazard</span>
+                      <span>🛰️ NASA Planetary Hazard</span>
                     </div>
                     <div className="font-semibold text-slate-900 leading-snug">{ev.title}</div>
-                    <div className="text-slate-500 text-[10px]">
-                      Category: {ev.category} {ev.distanceKm !== undefined ? `• ${ev.distanceKm} km from target` : ''}
+                    <div className="text-slate-500 text-[10px] font-mono">
+                      {ev.category} • {evLat.toFixed(2)}°, {evLng.toFixed(2)}°
                     </div>
-                    {ev.url && (
-                      <a
-                        href={ev.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-[10px] text-amber-600 hover:text-amber-700 underline font-medium pt-0.5"
-                      >
-                        NASA Observatory Bulletin &rarr;
-                      </a>
+                    {ev.distanceKm !== undefined && (
+                      <div className="text-slate-400 text-[10px]">
+                        Distance: {ev.distanceKm.toLocaleString()} km from selected target
+                      </div>
                     )}
+                    <div className="pt-1 flex flex-col gap-1">
+                      {ev.url && (
+                        <a
+                          href={ev.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block text-[10px] text-amber-600 hover:text-amber-700 underline font-medium"
+                        >
+                          NASA Observatory Bulletin &rarr;
+                        </a>
+                      )}
+                      <button
+                        onClick={() => onSelectCoordinates(evLat, evLng)}
+                        className="mt-1 w-full py-1.5 px-2 rounded-lg bg-slate-950 text-white font-semibold text-[10px] hover:bg-slate-800 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                      >
+                        <span>Analyze NASA Telemetry Here</span>
+                      </button>
+                    </div>
                   </div>
                 </Popup>
               </Marker>

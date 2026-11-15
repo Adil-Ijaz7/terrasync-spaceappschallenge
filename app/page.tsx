@@ -139,8 +139,10 @@ export default function EarthDetectiveDashboard() {
       setSelectedSectorName(match.name);
       setSelectedSectorCode(match.sectorCode);
     } else {
-      setSelectedSectorName(`Target (${lat.toFixed(3)}°N, ${lng.toFixed(3)}°E)`);
-      setSelectedSectorCode('CUSTOM GRID');
+      const latStr = lat >= 0 ? `${lat.toFixed(3)}°N` : `${Math.abs(lat).toFixed(3)}°S`;
+      const lngStr = lng >= 0 ? `${lng.toFixed(3)}°E` : `${Math.abs(lng).toFixed(3)}°W`;
+      setSelectedSectorName(`Global Point (${latStr}, ${lngStr})`);
+      setSelectedSectorCode('NASA GLOBAL GRID');
     }
     triggerAnalysis(lat, lng, cropFilter !== 'all' ? cropFilter : 'rice');
   };
@@ -352,7 +354,7 @@ export default function EarthDetectiveDashboard() {
           <div className="hidden sm:flex items-center h-10 px-3.5 bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-2xs text-xs font-semibold text-slate-800">
             <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 shrink-0 animate-pulse"></span>
             <span>
-              {selectedSectorName.startsWith('Target')
+              {selectedSectorName.startsWith('Target') || selectedSectorName.startsWith('Global')
                 ? selectedSectorName
                 : `District Dadu (${selectedSectorName})`}
             </span>
@@ -508,7 +510,7 @@ export default function EarthDetectiveDashboard() {
                 {selectedSectorName}
               </h2>
               <p className="text-[11px] text-slate-500 font-mono">
-                {selectedLat.toFixed(4)}°N, {selectedLng.toFixed(4)}°E • RH {telemetry?.power.relativeHumidityPercent ?? 35}% • Rain {telemetry?.power.precipitationMm ?? 0}mm
+                {selectedLat >= 0 ? `${selectedLat.toFixed(4)}°N` : `${Math.abs(selectedLat).toFixed(4)}°S`}, {selectedLng >= 0 ? `${selectedLng.toFixed(4)}°E` : `${Math.abs(selectedLng).toFixed(4)}°W`} • RH {telemetry?.power.relativeHumidityPercent ?? 35}% • Rain {telemetry?.power.precipitationMm ?? 0}mm
               </p>
             </div>
 
@@ -894,7 +896,7 @@ export default function EarthDetectiveDashboard() {
                   Register Outpost at Selected Coordinates
                 </h3>
                 <p className="text-xs text-slate-500 font-mono">
-                  {selectedLat.toFixed(4)}°N, {selectedLng.toFixed(4)}°E
+                  {selectedLat >= 0 ? `${selectedLat.toFixed(4)}°N` : `${Math.abs(selectedLat).toFixed(4)}°S`}, {selectedLng >= 0 ? `${selectedLng.toFixed(4)}°E` : `${Math.abs(selectedLng).toFixed(4)}°W`}
                 </p>
               </div>
               <button

@@ -88,17 +88,17 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
     const rh2mMap = data.properties?.parameter?.RH2M || {};
     const prectotMap = data.properties?.parameter?.PRECTOTCORR || {};
 
-    const dates = Object.keys(t2mMap).filter((d) => t2mMap[d] !== -999 && gwetprofMap[d] !== -999);
+    const dates = Object.keys(t2mMap).filter((d) => t2mMap[d] !== -999);
 
     if (dates.length === 0) {
       throw new Error('No valid NASA telemetry records in queried date range');
     }
 
     const latestDate = dates[dates.length - 1];
-    const temp = t2mMap[latestDate] ?? 32;
-    const soilFrac = gwetprofMap[latestDate] ?? 0.25;
+    const temp = t2mMap[latestDate] ?? 28;
+    const soilFrac = gwetprofMap[latestDate] !== undefined && gwetprofMap[latestDate] !== -999 ? gwetprofMap[latestDate] : 0.28;
     const soilPercent = Math.max(0, Math.min(100, Math.round(soilFrac * 100)));
-    const humidity = rh2mMap[latestDate] && rh2mMap[latestDate] !== -999 ? rh2mMap[latestDate] : 38;
+    const humidity = rh2mMap[latestDate] && rh2mMap[latestDate] !== -999 ? rh2mMap[latestDate] : 45;
     const rain = prectotMap[latestDate] && prectotMap[latestDate] !== -999 ? prectotMap[latestDate] : 0.0;
 
     let condition: NasaPowerData['soilCondition'] = 'Optimal';
@@ -111,8 +111,8 @@ export async function getPowerData(lat: number, lng: number): Promise<NasaPowerD
     const historical7Day = dates.slice(-7).map((d) => ({
       date: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`,
       temperatureC: Math.round(t2mMap[d] * 10) / 10,
-      soilMoisturePercent: Math.round((gwetprofMap[d] || 0) * 100),
-      relativeHumidityPercent: Math.round(rh2mMap[d] && rh2mMap[d] !== -999 ? rh2mMap[d] : 38),
+      soilMoisturePercent: Math.round((gwetprofMap[d] !== undefined && gwetprofMap[d] !== -999 ? gwetprofMap[d] : 0.28) * 100),
+      relativeHumidityPercent: Math.round(rh2mMap[d] && rh2mMap[d] !== -999 ? rh2mMap[d] : 45),
       precipitationMm: Math.round((prectotMap[d] && prectotMap[d] !== -999 ? prectotMap[d] : 0) * 10) / 10,
     }));
 
@@ -187,13 +187,14 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 export async function getEonetEvents(
   lat: number,
   lng: number,
-  radiusKm: number = 1200
+  radiusKm: number = 40000
 ): Promise<{ events: NasaEonetEvent[]; threatLevel: NasaTelemetrySnapshot['nearbyThreatLevel'] }> {
-  const url = 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100';
+  // Query active & recent natural hazards globally from NASA EONET v3 (Floods, Severe Storms, Wildfires, Cyclones)
+  const url = 'https://eonet.gsfc.nasa.gov/api/v3/events?status=all&days=60&limit=150';
 
   try {
     const res = await fetch(url, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 1800 }, // Cache for 30 minutes
       headers: { 'Accept': 'application/json' },
     });
 
@@ -202,20 +203,37 @@ export async function getEonetEvents(
     const data = await res.json();
     const rawEvents = data.events || [];
 
-    const nearbyEvents: NasaEonetEvent[] = [];
+    const allGlobalEvents: NasaEonetEvent[] = [];
 
     for (const ev of rawEvents) {
-      const cat = ev.categories?.[0]?.title || 'Unknown';
+      const cat = ev.categories?.[0]?.title || 'Natural Hazard';
       const geometry = ev.geometry?.[ev.geometry.length - 1];
-      if (geometry && Array.isArray(geometry.coordinates) && geometry.coordinates.length >= 2) {
-        // EONET coordinates are [longitude, latitude]
-        const evLng = geometry.coordinates[0];
-        const evLat = geometry.coordinates[1];
-        const dist = calculateDistanceKm(lat, lng, evLat, evLng);
+      
+      if (geometry && geometry.coordinates) {
+        let evLng: number | null = null;
+        let evLat: number | null = null;
 
-        // Keep relevant events within radius, or regional floods/severe storms
-        if (dist <= radiusKm || ev.title.toLowerCase().includes('pakistan') || ev.title.toLowerCase().includes('indus')) {
-          nearbyEvents.push({
+        // Parse Point coordinates [longitude, latitude]
+        if (Array.isArray(geometry.coordinates)) {
+          if (typeof geometry.coordinates[0] === 'number' && typeof geometry.coordinates[1] === 'number') {
+            evLng = geometry.coordinates[0];
+            evLat = geometry.coordinates[1];
+          } else if (Array.isArray(geometry.coordinates[0])) {
+            // Flatten nested polygon rings to obtain representative centroid
+            let flat: any = geometry.coordinates;
+            while (Array.isArray(flat[0]) && flat[0].length > 0 && typeof flat[0][0] !== 'number') {
+              flat = flat[0];
+            }
+            if (Array.isArray(flat[0]) && typeof flat[0][0] === 'number' && typeof flat[0][1] === 'number') {
+              evLng = flat[0][0];
+              evLat = flat[0][1];
+            }
+          }
+        }
+
+        if (evLat !== null && evLng !== null && !isNaN(evLat) && !isNaN(evLng)) {
+          const dist = calculateDistanceKm(lat, lng, evLat, evLng);
+          allGlobalEvents.push({
             id: ev.id,
             title: ev.title,
             category: cat,
@@ -228,17 +246,18 @@ export async function getEonetEvents(
       }
     }
 
-    nearbyEvents.sort((a, b) => (a.distanceKm || 9999) - (b.distanceKm || 9999));
+    // Sort by proximity to selected coordinate
+    allGlobalEvents.sort((a, b) => (a.distanceKm || 99999) - (b.distanceKm || 99999));
 
     let threatLevel: NasaTelemetrySnapshot['nearbyThreatLevel'] = 'None';
-    if (nearbyEvents.length > 0) {
-      const closest = nearbyEvents[0].distanceKm || 9999;
+    if (allGlobalEvents.length > 0) {
+      const closest = allGlobalEvents[0].distanceKm || 99999;
       if (closest < 250) threatLevel = 'Critical';
-      else if (closest < 500) threatLevel = 'Severe';
-      else if (closest < 1000) threatLevel = 'Moderate';
+      else if (closest < 600) threatLevel = 'Severe';
+      else if (closest < 1200) threatLevel = 'Moderate';
     }
 
-    return { events: nearbyEvents.slice(0, 5), threatLevel };
+    return { events: allGlobalEvents, threatLevel };
   } catch (err: any) {
     console.warn('NASA EONET API fetch error:', err.message);
     return { events: [], threatLevel: 'None' };
