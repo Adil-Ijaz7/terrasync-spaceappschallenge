@@ -274,7 +274,7 @@ export default function AutomatedDispatchSettingsPage() {
                   <div>
                     <span className="font-bold block">Threatened Outposts Only</span>
                     <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
-                      Only send when ML predicts PWP wilt in $\le 3$ days or severe hazard.
+                      Only send when ML predicts PWP wilt in &le; 3 days or severe hazard.
                     </span>
                   </div>
                 </label>

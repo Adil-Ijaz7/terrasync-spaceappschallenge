@@ -18,8 +18,16 @@ export const metadata: Metadata = {
   description:
     'Leveraging Open Science Data (NASA POWER & EONET) for Agricultural Resilience in Dadu, Sindh, Pakistan via Machine Learning Predictions and Automated Farmer Email Alerts.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({

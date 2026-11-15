@@ -535,7 +535,7 @@ export default function FieldAgentPwaPage() {
                 <div className="p-3 rounded-2xl bg-amber-50/50 border border-amber-200/60 flex items-center justify-between text-xs text-amber-900">
                   <span className="font-semibold flex items-center gap-1.5">
                     <TrendingDown className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Daily Moisture Loss Rate: <strong>{(mlPrediction.dailyMoistureLossRate * 100).toFixed(1)}%/day</strong></span>
+                    <span>Daily Moisture Loss Rate: <strong>{Math.abs(mlPrediction.dailyMoistureLossRate).toFixed(1)}%/day</strong></span>
                   </span>
                   <span className="font-mono text-[11px] text-amber-800">
                     Confidence: <strong>{(mlPrediction.statisticalR2 * 100).toFixed(0)}% (R²)</strong>

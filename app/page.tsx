@@ -564,7 +564,7 @@ export default function EarthDetectiveDashboard() {
                   Daily Loss Rate
                 </div>
                 <div className="text-sm font-bold text-slate-900 mt-0.5">
-                  {prediction.dailyMoistureLossRate.toFixed(1)}%/d
+                  {Math.abs(prediction.dailyMoistureLossRate).toFixed(1)}%/d
                 </div>
               </div>
             </div>
@@ -704,7 +704,7 @@ export default function EarthDetectiveDashboard() {
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
                 <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-                <span>Loss: <strong>{prediction.dailyMoistureLossRate.toFixed(1)}%/d</strong></span>
+                <span>Loss: <strong>{Math.abs(prediction.dailyMoistureLossRate).toFixed(1)}%/d</strong></span>
               </span>
               <span className="text-slate-300">•</span>
               <span className="text-[11px] text-slate-500 truncate max-w-[260px]">
