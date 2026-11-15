@@ -8,11 +8,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 > **NASA Space Apps Challenge 2026**  
-> **Challenge Track:** Earth's True Detective  
+> **Challenge Track:** Be an Earth's True Detective  
 > **Target Region:** District Dadu, Sindh, Pakistan (26.7341°N, 67.7795°E) with Worldwide Planetary Telemetry  
 > **Core Innovation:** Orbital Forensic Telemetry + Machine Learning Multi-Day Predictive Forecasting + Autonomous Farmer Email Alerts in Native Sindhi (سنڌي), Urdu (اردو), and English.  
 
-📖 **Full Non-Technical & Technical Architecture Report:** See [`PROJECT_DOCUMENTATION.md`](./PROJECT_DOCUMENTATION.md)
+📖 **Full Technical Architecture Report:** See [`PROJECT_DOCUMENTATION.md`](./PROJECT_DOCUMENTATION.md)  
+🌾 **سنڌي ٻوليءَ ۾ مڪمل گائيڊ (Sindhi Native Guide for Farmers & Non-Tech):** ڏسو [`SINDHI_EXPLANATION.md`](./SINDHI_EXPLANATION.md)
 
 ---
 
