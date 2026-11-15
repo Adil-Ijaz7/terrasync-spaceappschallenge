@@ -18,6 +18,8 @@ export async function POST(request: Request) {
 
     const autoDispatchResults: any[] = [];
 
+    const forceAll = Boolean(body.forceAll || body.dispatchAll);
+
     // 2. Scan farms against live NASA POWER & EONET telemetry + ML Predictive Intelligence
     for (const farm of farms) {
       const telemetry = await getFullTelemetry(farm.latitude, farm.longitude);
@@ -41,10 +43,11 @@ export async function POST(request: Request) {
       // Trigger condition:
       // A: Critical current observation (temp >= 38 & moisture <= 20, or flood risk, or EONET threat)
       // B: ML predicts Permanent Wilting Point breach in <= 3 days!
+      // C: Scheduled daily automated dispatch to all registered outposts (forceAll)
       const isCriticalCurrent = (temp >= 38 && moisture <= 20) || moisture >= 75 || telemetry.eonetEvents.length > 0;
       const isPredictedCritical = prediction.predictedDaysToPWP <= 3.0 || prediction.alertRecommended;
 
-      if (isCriticalCurrent || isPredictedCritical) {
+      if (forceAll || isCriticalCurrent || isPredictedCritical) {
         // Generate multilingual advice
         const advice = await generateAgronomistAdvice({
           temperatureC: temp,

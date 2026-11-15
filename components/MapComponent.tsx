@@ -14,7 +14,7 @@ interface MapProps {
   farms: FarmRecord[];
   eonetEvents?: NasaEonetEvent[];
   onSelectFarm?: (farm: FarmRecord) => void;
-  mapStyle?: 'voyager' | 'satellite' | 'street';
+  mapStyle?: 'voyager' | 'carto' | 'google' | 'satellite' | 'street';
   isPickerMode?: boolean;
 }
 
@@ -156,13 +156,28 @@ export default function MapComponent({
 
   // 1. CARTO Voyager (Clean, pastel, pristine roads & water matching reference image)
   const cartoVoyagerUrl = `https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${cartoKey}`;
-  // 2. Esri World Imagery (High-Resolution NASA & Satellite Imagery)
-  const satelliteUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-  // 3. Esri World Street Map (Alternative street view)
+  // 2. Google Maps Standard Roads
+  const googleMapUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+  // 3. High-Resolution Satellite View (Google Hybrid Satellite)
+  const satelliteUrl = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+  // 4. Esri World Street Map (Alternative street view)
   const streetUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
 
   const tileUrl =
-    mapStyle === 'satellite' ? satelliteUrl : mapStyle === 'street' ? streetUrl : cartoVoyagerUrl;
+    mapStyle === 'google'
+      ? googleMapUrl
+      : mapStyle === 'satellite'
+      ? satelliteUrl
+      : mapStyle === 'street'
+      ? streetUrl
+      : cartoVoyagerUrl;
+
+  const attributionText =
+    mapStyle === 'google'
+      ? '&copy; Google Maps'
+      : mapStyle === 'satellite'
+      ? '&copy; Google / NASA / Copernicus'
+      : '&copy; CARTO &copy; OpenStreetMap';
 
   return (
     <div ref={containerRef} className="relative w-full h-full bg-[#f1f5f4] overflow-hidden">
@@ -175,7 +190,7 @@ export default function MapComponent({
         style={{ minHeight: '100%', width: '100%', background: '#f1f5f4' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; NASA'
+          attribution={attributionText}
           url={tileUrl}
           maxZoom={19}
         />

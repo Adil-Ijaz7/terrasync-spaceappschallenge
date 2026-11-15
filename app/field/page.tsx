@@ -28,6 +28,7 @@ import {
 import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { runMlPredictionModel, MlPredictionResult } from '@/lib/ml-detector';
+import { FarmRecord } from '@/lib/supabase';
 
 const DADU_PRESETS = [
   { name: 'Dadu Central', lat: 26.7341, lng: 67.7795, note: 'District Headquarters' },
@@ -50,6 +51,8 @@ export default function FieldAgentPwaPage() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [activeLangTab, setActiveLangTab] = useState<'sindhi' | 'urdu' | 'english'>('sindhi');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [registeredFarms, setRegisteredFarms] = useState<FarmRecord[]>([]);
+  const [selectedOutpostKey, setSelectedOutpostKey] = useState<string>('preset-Dadu Central');
 
   const fetchTelemetry = async (latitude: number, longitude: number, currentCrop: string) => {
     setIsLoading(true);
@@ -85,7 +88,47 @@ export default function FieldAgentPwaPage() {
 
   useEffect(() => {
     fetchTelemetry(lat, lng, crop);
+
+    // Load registered outposts for the dropdown
+    fetch('/api/farms', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.farms && Array.isArray(data.farms)) {
+          setRegisteredFarms(data.farms);
+        }
+      })
+      .catch((e) => console.warn('Could not load farms in field agent:', e));
   }, []);
+
+  const handleOutpostSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedOutpostKey(val);
+
+    if (val.startsWith('preset-')) {
+      const pName = val.replace('preset-', '');
+      const preset = DADU_PRESETS.find((p) => p.name === pName);
+      if (preset) {
+        setLat(preset.lat);
+        setLng(preset.lng);
+        fetchTelemetry(preset.lat, preset.lng, crop);
+      }
+    } else if (val.startsWith('farm-')) {
+      const fId = val.replace('farm-', '');
+      const farm = registeredFarms.find((f) => f.id === fId);
+      if (farm) {
+        setLat(farm.latitude);
+        setLng(farm.longitude);
+        if (farm.email) setFarmerEmail(farm.email);
+        const cropLower = farm.crop_type?.toLowerCase().includes('wheat')
+          ? 'wheat'
+          : farm.crop_type?.toLowerCase().includes('cotton')
+          ? 'cotton'
+          : 'rice';
+        setCrop(cropLower);
+        fetchTelemetry(farm.latitude, farm.longitude, cropLower);
+      }
+    }
+  };
 
   const handleUseCurrentLocation = () => {
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
@@ -240,6 +283,41 @@ export default function FieldAgentPwaPage() {
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">Target Outpost Coordinates</h3>
                   <p className="text-[11px] text-slate-500">Select sector or enter manual coordinates</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Outpost Selection Dropdown */}
+            <div>
+              <label className="block text-slate-700 text-xs font-semibold mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                <span>Select Target Outpost / Sector</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedOutpostKey}
+                  onChange={handleOutpostSelectChange}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 outline-none focus:border-slate-400 focus:bg-white text-xs font-semibold transition-all appearance-none cursor-pointer pr-8 shadow-2xs"
+                >
+                  <optgroup label="📍 Dadu District Preset Sectors">
+                    {DADU_PRESETS.map((p) => (
+                      <option key={p.name} value={`preset-${p.name}`}>
+                        {p.name} ({p.lat.toFixed(4)}°N, {p.lng.toFixed(4)}°E) — {p.note}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {registeredFarms.length > 0 && (
+                    <optgroup label="🌾 Registered Farmer Outposts">
+                      {registeredFarms.map((farm) => (
+                        <option key={farm.id} value={`farm-${farm.id}`}>
+                          {farm.farmer_name} — {farm.region} ({farm.crop_type || 'Rice'})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  ▼
                 </div>
               </div>
             </div>

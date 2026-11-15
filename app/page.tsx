@@ -16,6 +16,8 @@ import {
   Send,
   X,
   Plus,
+  BrainCircuit,
+  Clock,
 } from 'lucide-react';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { AgronomistOutput } from '@/lib/agronomist';
@@ -50,7 +52,7 @@ export default function EarthDetectiveDashboard() {
   const [selectedSectorName, setSelectedSectorName] = useState<string>('Dadu Central');
   const [selectedSectorCode, setSelectedSectorCode] = useState<string>('HO-1, HO-3, HO-7');
 
-  const [mapStyle, setMapStyle] = useState<'voyager' | 'satellite' | 'street'>('voyager');
+  const [mapStyle, setMapStyle] = useState<'carto' | 'google' | 'satellite'>('carto');
   const [telemetry, setTelemetry] = useState<NasaTelemetrySnapshot | null>(null);
   const [advice, setAdvice] = useState<AgronomistOutput | null>(null);
   const [farms, setFarms] = useState<FarmRecord[]>([]);
@@ -61,7 +63,6 @@ export default function EarthDetectiveDashboard() {
   const [cropFilter, setCropFilter] = useState<'all' | 'Rice' | 'Wheat' | 'Cotton'>('all');
 
   // Interactive controls
-  const [spectralMode, setSpectralMode] = useState<'natural' | 'infrared'>('natural');
   const [language, setLanguage] = useState<'sindhi' | 'urdu' | 'english'>('sindhi');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -378,17 +379,42 @@ export default function EarthDetectiveDashboard() {
               </button>
             ))}
 
-            {/* Map Style Toggle */}
-            <button
-              onClick={() =>
-                setMapStyle((prev) => (prev === 'voyager' ? 'satellite' : 'voyager'))
-              }
-              className="h-9 px-3 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/90 text-slate-700 hover:text-slate-950 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs"
-              title="Toggle Map Style: CARTO Voyager vs Satellite"
-            >
-              <Layers className="w-3.5 h-3.5 text-amber-500" />
-              <span>{mapStyle === 'voyager' ? 'Satellite View' : 'Voyager View'}</span>
-            </button>
+            {/* Map Style Multi-Selector: CARTO Voyager, Google Maps, Satellite View */}
+            <div className="h-9 px-1 bg-white/95 backdrop-blur-md rounded-full border border-slate-200/90 shadow-2xs flex items-center gap-1 text-[11px] font-medium text-slate-700">
+              <button
+                onClick={() => setMapStyle('carto')}
+                className={`px-2.5 py-1 rounded-full transition-all ${
+                  mapStyle === 'carto'
+                    ? 'bg-slate-950 text-white font-semibold shadow-2xs'
+                    : 'hover:text-slate-950'
+                }`}
+                title="CARTO Voyager Basemap"
+              >
+                CARTO
+              </button>
+              <button
+                onClick={() => setMapStyle('google')}
+                className={`px-2.5 py-1 rounded-full transition-all ${
+                  mapStyle === 'google'
+                    ? 'bg-slate-950 text-white font-semibold shadow-2xs'
+                    : 'hover:text-slate-950'
+                }`}
+                title="Google Maps Standard View"
+              >
+                Google Map
+              </button>
+              <button
+                onClick={() => setMapStyle('satellite')}
+                className={`px-2.5 py-1 rounded-full transition-all ${
+                  mapStyle === 'satellite'
+                    ? 'bg-slate-950 text-white font-semibold shadow-2xs'
+                    : 'hover:text-slate-950'
+                }`}
+                title="Google Satellite & NASA Hybrid View"
+              >
+                Satellite
+              </button>
+            </div>
           </div>
         </div>
 
@@ -602,130 +628,88 @@ export default function EarthDetectiveDashboard() {
         </div>
 
         {/* ===================================================== */}
-        {/* CARD 2 (Middle, 3 cols): Visual Evidence Photo Card   */}
+        {/* CARD 2 (Right, 7 cols): ML Predictive Time-Series Panel */}
         {/* ===================================================== */}
-        <div className="md:col-span-6 lg:col-span-3 bg-slate-900 rounded-2xl overflow-hidden relative shadow-2xs border border-slate-200/80 p-3.5 text-white flex flex-col justify-between group">
-
-          {/* Background Agricultural Crop Image with Spectral Filter */}
-          <div
-            className={`absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-105 ${spectralMode === 'infrared'
-              ? 'filter contrast-150 hue-rotate-[290deg] saturate-200'
-              : 'filter brightness-90 contrast-105'
-              }`}
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80')",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/20" />
-
-          {/* Top Tag & Toggle */}
-          <div className="relative z-10 flex items-center justify-between">
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/20 backdrop-blur-md border border-white/30 text-white">
-              🛰️ NASA Sentinel-2
-            </span>
-            <button
-              onClick={() =>
-                setSpectralMode((prev) => (prev === 'natural' ? 'infrared' : 'natural'))
-              }
-              className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-black/40 backdrop-blur-md border border-white/20 text-slate-200 hover:text-white transition-all"
-            >
-              {spectralMode === 'natural' ? 'Normal Lens' : '🚨 Infrared Mask'}
-            </button>
-          </div>
-
-          {/* Bottom Forensic Description */}
-          <div className="relative z-10 space-y-0.5">
-            <div className="flex items-center gap-1 text-amber-400 font-bold text-[10px] uppercase tracking-wider">
-              <span>Orbital Forensic Evidence</span>
-            </div>
-            <p className="text-[10px] text-slate-200 leading-tight">
-              Thermal-moisture decoupling identified. Root zone desiccating 48h prior to visible foliage wilt.
-            </p>
-          </div>
-        </div>
-
-        {/* ===================================================== */}
-        {/* CARD 3 (Right, 4 cols): Registered Outposts & Arc     */}
-        {/* ===================================================== */}
-        <div className="md:col-span-6 lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-
-          {/* Header & Avatars */}
+        <div className="md:col-span-12 lg:col-span-7 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+          
+          {/* Header */}
           <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-snug">
-                Registered Outposts
-              </h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Autonomous Sentinel monitoring registered farmers across Dadu.
-              </p>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shadow-2xs shrink-0">
+                <BrainCircuit className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight leading-none">
+                    ML Predictive Time-Series Forecast
+                  </h3>
+                  <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-900 px-2 py-0.5 rounded-full border border-amber-200/80">
+                    PWP in {prediction.predictedDaysToPWP > 14 ? '> 14 D' : `${prediction.predictedDaysToPWP.toFixed(1)} Days`}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Ordinary Least Squares (OLS) regression across rolling 7-day NASA POWER telemetry
+                </p>
+              </div>
             </div>
 
-            {/* Farmer Avatars */}
-            <div className="flex -space-x-1.5 shrink-0">
-              <div
-                className="w-6 h-6 rounded-full bg-slate-900 text-white border-2 border-white flex items-center justify-center text-[9px] font-bold"
-                title="Ghulam Rasool Brohi"
-              >
-                GR
-              </div>
-              <div
-                className="w-6 h-6 rounded-full bg-amber-600 text-white border-2 border-white flex items-center justify-center text-[9px] font-bold"
-                title="Allah Dino Chandio"
-              >
-                AD
-              </div>
-              <div
-                className="w-6 h-6 rounded-full bg-emerald-600 text-white border-2 border-white flex items-center justify-center text-[9px] font-bold"
-                title="Muhammad Bakhtiar Solangi"
-              >
-                MB
-              </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 shrink-0">
+              <span>Confidence: <strong>{prediction.modelConfidence}%</strong></span>
+              <span className="text-slate-300">•</span>
+              <span>R²: <strong>{prediction.statisticalR2.toFixed(2)}</strong></span>
             </div>
           </div>
 
-          {/* Arc Gauge */}
-          <div className="flex flex-col items-center justify-center pt-0.5">
-            <div className="relative w-40 h-20 flex items-end justify-center">
-              <svg className="w-40 h-20 overflow-visible" viewBox="0 0 160 85">
-                <path
-                  d="M 15 80 A 65 65 0 0 1 145 80"
-                  fill="none"
-                  stroke="#f1f5f9"
-                  strokeWidth="12"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M 15 80 A 65 65 0 0 1 145 80"
-                  fill="none"
-                  stroke="url(#arcGradient)"
-                  strokeWidth="12"
-                  strokeDasharray="204"
-                  strokeDashoffset={204 - 204 * (prediction.modelConfidence / 100) * 0.82}
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                />
-                <defs>
-                  <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#f59e0b" />
-                    <stop offset="100%" stopColor="#ea580c" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              <div className="absolute bottom-0 flex flex-col items-center leading-none">
-                <span className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                  8,5k
-                </span>
-                <span className="text-[9px] text-slate-500 font-medium uppercase tracking-wider mt-0.5">
-                  Hectares Monitored
-                </span>
+          {/* 3-Day Forecast Matrix */}
+          <div className="grid grid-cols-3 gap-2 my-1">
+            {prediction.forecast3Days.map((fc) => (
+              <div
+                key={fc.dayOffset}
+                className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-amber-300 transition-all text-center flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 font-semibold">
+                  <Clock className="w-3 h-3 text-amber-500" />
+                  <span>Day +{fc.dayOffset} ({fc.dateStr})</span>
+                </div>
+                <div className="text-base font-bold text-slate-900 my-0.5">
+                  {fc.predictedTempC}°C
+                </div>
+                <div className="text-[11px] text-amber-600 font-mono font-bold">
+                  {fc.predictedMoisturePercent}% Moisture
+                </div>
+                <div className="mt-0.5">
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                      fc.riskLevel === 'CRITICAL'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : fc.riskLevel === 'HIGH'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}
+                  >
+                    {fc.riskLevel}
+                  </span>
+                </div>
               </div>
+            ))}
+          </div>
+
+          {/* Bottom Dynamics & Action Bar */}
+          <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
+                <span>Loss: <strong>{prediction.dailyMoistureLossRate.toFixed(1)}%/d</strong></span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-[11px] text-slate-500 truncate max-w-[260px]">
+                {prediction.recommendedIrrigationTiming}
+              </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 mt-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Sentinel Armed (Confidence {prediction.modelConfidence}%)</span>
+              <span>Predictive Guard Active</span>
             </div>
           </div>
         </div>
