@@ -86,26 +86,46 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
   const trend = mlPrediction?.trendDirection ?? 'RAPID_DRYING';
   const confidence = mlPrediction?.modelConfidence ?? 94.2;
 
-  const badgeColor =
+  const badgeBg =
     urgencyLevel === 'CRITICAL'
-      ? '#dc2626'
+      ? '#fef2f2'
       : urgencyLevel === 'HIGH'
-      ? '#ea580c'
+      ? '#fff7ed'
       : urgencyLevel === 'MODERATE'
-      ? '#ca8a04'
-      : '#16a34a';
+      ? '#fefce8'
+      : '#ecfdf5';
+
+  const badgeText =
+    urgencyLevel === 'CRITICAL'
+      ? '#b91c1c'
+      : urgencyLevel === 'HIGH'
+      ? '#c2410c'
+      : urgencyLevel === 'MODERATE'
+      ? '#a16207'
+      : '#047857';
+
+  const badgeBorder =
+    urgencyLevel === 'CRITICAL'
+      ? '#fecaca'
+      : urgencyLevel === 'HIGH'
+      ? '#fed7aa'
+      : urgencyLevel === 'MODERATE'
+      ? '#fde047'
+      : '#a7f3d0';
 
   const forecastRows = mlPrediction?.forecast3Days && mlPrediction.forecast3Days.length > 0
-    ? mlPrediction.forecast3Days.map(f => `
-      <tr style="border-bottom: 1px solid #1e293b;">
-        <td style="padding: 10px 12px; font-weight: 600; color: #cbd5e1;">Day +${f.dayOffset} (${f.dateStr})</td>
-        <td style="padding: 10px 12px; color: #f8fafc; font-family: monospace;">${f.predictedTempC}°C</td>
-        <td style="padding: 10px 12px; color: #38bdf8; font-family: monospace;">${f.predictedMoisturePercent}%</td>
-        <td style="padding: 10px 12px;">
-          <span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: bold; background: ${
-            f.riskLevel === 'CRITICAL' ? '#7f1d1d' : f.riskLevel === 'HIGH' ? '#7c2d12' : '#064e3b'
+    ? mlPrediction.forecast3Days.map((f, idx) => `
+      <tr style="border-bottom: 1px solid #e2e8f0; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+        <td style="padding: 10px 14px; font-weight: 600; color: #334155;">Day +${f.dayOffset} (${f.dateStr})</td>
+        <td style="padding: 10px 14px; color: #0f172a; font-family: monospace; font-weight: bold;">${f.predictedTempC}°C</td>
+        <td style="padding: 10px 14px; color: #0284c7; font-family: monospace; font-weight: bold;">${f.predictedMoisturePercent}%</td>
+        <td style="padding: 10px 14px;">
+          <span style="display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 10px; font-weight: 700; text-transform: uppercase; background: ${
+            f.riskLevel === 'CRITICAL' ? '#fef2f2' : f.riskLevel === 'HIGH' ? '#fff7ed' : '#ecfdf5'
           }; color: ${
-            f.riskLevel === 'CRITICAL' ? '#fca5a5' : f.riskLevel === 'HIGH' ? '#fdba74' : '#6ee7b7'
+            f.riskLevel === 'CRITICAL' ? '#b91c1c' : f.riskLevel === 'HIGH' ? '#c2410c' : '#047857'
+          }; border: 1px solid ${
+            f.riskLevel === 'CRITICAL' ? '#fecaca' : f.riskLevel === 'HIGH' ? '#fed7aa' : '#a7f3d0'
           };">
             ${f.riskLevel}
           </span>
@@ -114,7 +134,7 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
     `).join('')
     : `
       <tr>
-        <td colspan="4" style="padding: 12px; text-align: center; color: #64748b;">Daily extrapolation computed from 7-day NASA POWER telemetry.</td>
+        <td colspan="4" style="padding: 14px; text-align: center; color: #64748b; font-size: 12px;">Daily extrapolation computed from 7-day NASA POWER telemetry.</td>
       </tr>
     `;
 
@@ -126,28 +146,28 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TerraSync Agricultural Alert</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #020617; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #020617; padding: 24px 12px;">
+<body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f7f6; padding: 32px 12px;">
     <tr>
       <td align="center">
-        <!-- Main Email Container -->
-        <table role="presentation" width="100%" style="max-width: 600px; background-color: #0b1329; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <!-- Main Email Container Matching Web App Aesthetic -->
+        <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);">
           
-          <!-- Header Bar -->
+          <!-- Modern Slate & Emerald Top Bar -->
           <tr>
-            <td style="background: linear-gradient(135deg, #0284c7 0%, #059669 100%); padding: 20px 24px;">
+            <td style="background-color: #0f172a; padding: 22px 26px;">
               <table width="100%" role="presentation">
                 <tr>
                   <td>
-                    <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                      Terra<span style="color: #a7f3d0;">Sync</span>
-                    </h1>
-                    <p style="margin: 3px 0 0; font-size: 11px; color: #e0f2fe; text-transform: uppercase; letter-spacing: 1px;">
-                      NASA Space Apps • Earth's True Detective Alert
-                    </p>
+                    <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; line-height: 1;">
+                      Terra<span style="color: #34d399;">Sync</span>
+                    </div>
+                    <div style="margin-top: 4px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;">
+                      NASA Space Apps • Earth&apos;s True Detective
+                    </div>
                   </td>
                   <td align="right">
-                    <span style="display: inline-block; background: ${badgeColor}; color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <span style="display: inline-block; background: ${badgeBg}; color: ${badgeText}; border: 1px solid ${badgeBorder}; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
                       ${urgencyLevel} RISK
                     </span>
                   </td>
@@ -156,72 +176,80 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
             </td>
           </tr>
 
-          <!-- Farmer & Outpost Metadata -->
+          <!-- Farmer & Outpost Metadata Strip -->
           <tr>
-            <td style="padding: 20px 24px; border-bottom: 1px solid #1e293b; background-color: #080f24;">
+            <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
               <table width="100%" role="presentation">
                 <tr>
-                  <td style="font-size: 14px; color: #94a3b8;">
-                    Recipient: <strong style="color: #f1f5f9;">${farmerName}</strong><br>
-                    Location: <strong style="color: #38bdf8;">${region}</strong>
+                  <td style="font-size: 13px; color: #475569; line-height: 1.5;">
+                    Recipient: <strong style="color: #0f172a;">${farmerName}</strong><br>
+                    Outpost: <strong style="color: #0284c7;">${region}</strong>
                   </td>
-                  <td align="right" style="font-size: 14px; color: #94a3b8;">
-                    Crop Target: <strong style="color: #34d399;">${crop}</strong><br>
-                    ML Confidence: <strong style="color: #a78bfa;">${confidence}%</strong>
+                  <td align="right" style="font-size: 13px; color: #475569; line-height: 1.5;">
+                    Crop Target: <strong style="color: #059669;">${crop}</strong><br>
+                    ML Confidence: <strong style="color: #7c3aed;">${confidence}%</strong>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Primary Urgent Notice in Sindhi (Native Language) -->
+          <!-- Primary Urgent Notice in Native Sindhi -->
           <tr>
-            <td style="padding: 24px; background-color: #0e172a; border-bottom: 1px solid #1e293b;">
-              <div style="direction: rtl; text-align: right; font-size: 17px; line-height: 1.7; color: #f8fafc; font-weight: 600;">
-                <span style="color: #38bdf8; font-size: 13px; display: block; margin-bottom: 4px; font-weight: bold; text-align: right;">سنڌي زرعي هدايت (Sindhi Advisory)</span>
-                ${advisoryTextSindhi}
+            <td style="padding: 22px 24px; background-color: #ffffff; border-bottom: 1px solid #f1f5f9;">
+              <div style="direction: rtl; text-align: right;">
+                <span style="color: #0284c7; font-size: 11px; display: block; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                  سنڌي زرعي هدايت (Native Sindhi Advisory)
+                </span>
+                <div style="font-size: 16px; line-height: 1.7; color: #0f172a; font-weight: 600;">
+                  ${advisoryTextSindhi}
+                </div>
               </div>
             </td>
           </tr>
 
-          <!-- Urdu Notice -->
+          <!-- Urgent Notice in Native Urdu -->
           <tr>
-            <td style="padding: 16px 24px; background-color: #091024; border-bottom: 1px solid #1e293b;">
-              <div style="direction: rtl; text-align: right; font-size: 15px; line-height: 1.6; color: #e2e8f0;">
-                <span style="color: #34d399; font-size: 12px; display: block; margin-bottom: 3px; font-weight: bold;">اردو زرعی مشورہ (Urdu Advisory)</span>
-                ${advisoryTextUrdu}
+            <td style="padding: 20px 24px; background-color: #fafbfc; border-bottom: 1px solid #e2e8f0;">
+              <div style="direction: rtl; text-align: right;">
+                <span style="color: #059669; font-size: 11px; display: block; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                  اردو زرعی مشورہ (Native Urdu Advisory)
+                </span>
+                <div style="font-size: 15px; line-height: 1.7; color: #1e293b; font-weight: 500;">
+                  ${advisoryTextUrdu}
+                </div>
               </div>
             </td>
           </tr>
 
-          <!-- Current Telemetry Bento -->
+          <!-- Current NASA Telemetry Bento Grid -->
           <tr>
-            <td style="padding: 20px 24px; border-bottom: 1px solid #1e293b;">
-              <h3 style="margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;">
+            <td style="padding: 22px 24px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff;">
+              <div style="margin-bottom: 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: #64748b; font-weight: 700;">
                 Live NASA POWER Observation
-              </h3>
+              </div>
               <table width="100%" role="presentation" cellspacing="8" cellpadding="0">
                 <tr>
-                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 11px; color: #fbbf24; text-transform: uppercase; font-weight: bold;">Surface Temp (T2M)</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${temp.toFixed(1)}°C</div>
+                  <td width="50%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 11px; color: #ea580c; text-transform: uppercase; font-weight: 700;">Surface Temp (T2M)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">${temp.toFixed(1)}°C</div>
                     <div style="font-size: 11px; color: #64748b; margin-top: 2px;">CERES / MERRA-2 assimilation</div>
                   </td>
-                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 11px; color: #38bdf8; text-transform: uppercase; font-weight: bold;">Root Profile Moisture</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${moisture}%</div>
-                    <div style="font-size: 11px; color: #f87171; margin-top: 2px;">Wilting Point Threshold: 13.5%</div>
+                  <td width="50%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 11px; color: #0284c7; text-transform: uppercase; font-weight: 700;">Root Zone Moisture</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">${moisture}%</div>
+                    <div style="font-size: 11px; color: #e11d48; margin-top: 2px;">Wilting Threshold: 13.5%</div>
                   </td>
                 </tr>
                 <tr>
-                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 11px; color: #14b8a6; text-transform: uppercase; font-weight: bold;">Relative Humidity (RH2M)</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${nasaSnapshot?.power.relativeHumidityPercent ?? 35}%</div>
+                  <td width="50%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 11px; color: #0d9488; text-transform: uppercase; font-weight: 700;">Relative Humidity (RH2M)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">${nasaSnapshot?.power.relativeHumidityPercent ?? 35}%</div>
                     <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Atmospheric Vapor Deficit</div>
                   </td>
-                  <td width="50%" style="background-color: #080e22; border: 1px solid #1e293b; border-radius: 10px; padding: 14px;">
-                    <div style="font-size: 11px; color: #818cf8; text-transform: uppercase; font-weight: bold;">Precipitation (Rain)</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-top: 4px;">${(nasaSnapshot?.power.precipitationMm ?? 0.0).toFixed(1)} mm</div>
+                  <td width="50%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 11px; color: #6366f1; text-transform: uppercase; font-weight: 700;">Precipitation (Rain)</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">${(nasaSnapshot?.power.precipitationMm ?? 0.0).toFixed(1)} mm</div>
                     <div style="font-size: 11px; color: #64748b; margin-top: 2px;">GPM / IMERG Satellite Feed</div>
                   </td>
                 </tr>
@@ -231,19 +259,19 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
 
           <!-- Machine Learning Predictive Section -->
           <tr>
-            <td style="padding: 20px 24px; border-bottom: 1px solid #1e293b; background-color: #091129;">
+            <td style="padding: 22px 24px; border-bottom: 1px solid #e2e8f0; background-color: #fafbfc;">
               <table width="100%" role="presentation" style="margin-bottom: 12px;">
                 <tr>
                   <td>
-                    <h3 style="margin: 0; font-size: 14px; color: #ffffff; font-weight: 700;">
-                      🧠 ML Predictive Forecast (Next 3 Days)
-                    </h3>
-                    <p style="margin: 4px 0 0; font-size: 11px; color: #94a3b8;">
-                      Calculated using Ordinary Least Squares time-series regression across past 7-day readings.
-                    </p>
+                    <div style="font-size: 13px; color: #0f172a; font-weight: 700;">
+                      ML Predictive Forecast (Next 3 Days)
+                    </div>
+                    <div style="margin-top: 2px; font-size: 11px; color: #64748b;">
+                      Calculated via Ordinary Least Squares (OLS) time-series regression.
+                    </div>
                   </td>
                   <td align="right">
-                    <span style="font-size: 12px; font-weight: bold; color: #f43f5e; background: #881337; padding: 4px 8px; border-radius: 6px;">
+                    <span style="display: inline-block; font-size: 11px; font-weight: 700; color: #c2410c; background: #fff7ed; border: 1px solid #fed7aa; padding: 3px 10px; border-radius: 9999px;">
                       PWP in ${daysToPwp} Days
                     </span>
                   </td>
@@ -251,13 +279,13 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
               </table>
 
               <!-- Forecast Table -->
-              <table width="100%" cellspacing="0" cellpadding="0" style="font-size: 12px; border-collapse: collapse; background-color: #050a1b; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden;">
+              <table width="100%" cellspacing="0" cellpadding="0" style="font-size: 12px; border-collapse: collapse; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                 <thead>
-                  <tr style="background-color: #0d1838; border-bottom: 1px solid #1e293b; text-align: left;">
-                    <th style="padding: 10px 12px; color: #94a3b8; font-weight: bold;">Projection</th>
-                    <th style="padding: 10px 12px; color: #94a3b8; font-weight: bold;">Pred. Temp</th>
-                    <th style="padding: 10px 12px; color: #94a3b8; font-weight: bold;">Pred. Moisture</th>
-                    <th style="padding: 10px 12px; color: #94a3b8; font-weight: bold;">Status</th>
+                  <tr style="background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0; text-align: left;">
+                    <th style="padding: 10px 14px; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase;">Projection</th>
+                    <th style="padding: 10px 14px; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase;">Pred. Temp</th>
+                    <th style="padding: 10px 14px; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase;">Pred. Moisture</th>
+                    <th style="padding: 10px 14px; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase;">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -265,18 +293,18 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
                 </tbody>
               </table>
 
-              <div style="margin-top: 14px; padding: 12px; border-left: 3px solid #38bdf8; background-color: #050c20; font-size: 12px; color: #cbd5e1; line-height: 1.5;">
-                <strong style="color: #38bdf8;">Technical Synthesis:</strong> ${advisoryTextEnglish}
+              <div style="margin-top: 14px; padding: 12px 14px; border-left: 3px solid #0284c7; background-color: #ffffff; border: 1px solid #e2e8f0; border-left-width: 3px; border-radius: 8px; font-size: 12px; color: #334155; line-height: 1.5;">
+                <strong style="color: #0284c7;">Technical Synthesis:</strong> ${advisoryTextEnglish}
               </div>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 24px; text-align: center; background-color: #030712;">
-              <p style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.5;">
-                This automated alert is generated by <strong>TerraSync</strong> in collaboration with NASA Open Science Data.<br>
-                Data sources: NASA POWER Agroclimatology &amp; NASA EONET v3.<br>
+            <td style="padding: 22px 24px; text-align: center; background-color: #f8fafc;">
+              <p style="margin: 0; font-size: 11px; color: #64748b; line-height: 1.6;">
+                This automated advisory is dispatched by <strong>TerraSync</strong> powered by NASA Open Science Data.<br>
+                Missions: NASA POWER Agroclimatology (CERES &amp; MERRA-2) + NASA EONET v3.<br>
                 Target District: Dadu, Sindh, Pakistan.
               </p>
             </td>
