@@ -171,9 +171,8 @@ export default function EarthDetectiveDashboard() {
       historical7Day: telemetry?.power.historical7Day,
       referenceDate: telemetry?.power.date,
       nearbyThreat:
-        telemetry?.eonetEvents && telemetry.eonetEvents.length > 0
-          ? telemetry.eonetEvents[0].title
-          : undefined,
+        telemetry?.eonetEvents?.find((ev) => typeof ev.distanceKm === 'number' && ev.distanceKm <= 150)
+          ?.title || undefined,
     });
   }, [telemetry, cropFilter]);
 

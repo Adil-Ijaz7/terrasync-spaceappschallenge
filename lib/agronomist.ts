@@ -119,10 +119,30 @@ export function generateLocalAgronomistAdvice(input: AgronomistInput): Agronomis
   } else {
     urgency = 'LOW';
     isCritical = false;
-    romanUrdu = `[ALERT] Mausam mozoon hai: Darja-e-hararat ${temp}°C aur nami ${moisture}%. [ACTION] Fasal par keeray ki nigrani karein aur mamool k mutabiq pani dein.`;
-    sindhi = `[موسم ٺيڪ آهي] گرمي پد ${temp}°C ۽ نمي ${moisture}%. [عمل] فصل تي جيتن جي نگراني رکو ۽ معمول مطابق پاڻي ڏيو.`;
-    urdu = `[موسم مناسب ہے] درجہ حرارت ${temp}°C اور نمی ${moisture}% ہے۔ [اقدام] فصل پر کیڑوں کی نگرانی رکھیں اور معمول کے مطابق پانی دیں۔`;
-    englishExp = `Optimal microclimate conditions: ${temp}°C and ${moisture}% profile moisture. Continue standard scouting and scheduled management.`;
+    const cropLower = (crop || 'rice').toLowerCase();
+
+    if (cropLower.includes('wheat') || cropLower === 'wheat') {
+      romanUrdu = `[Gandum] Mausam mozoon hai: Darja-e-hararat ${temp}°C aur zameen ki nami ${moisture}%. [ACTION] Gandum k liye nami munasib hai, mamool ki aabpashi aur ghaas ki safai jari rakhain.`;
+      sindhi = `[ڪڻڪ جو فصل] گرمي پد ${temp}°C ۽ زمين جي نمي ${moisture}%. [عمل] ڪڻڪ جي واڌ ويجهه لاءِ نمي موزون آهي، معمول مطابق پاڻي ۽ گند گاهه جي صفائي جاري رکو.`;
+      urdu = `[گندم کا کھیت] درجہ حرارت ${temp}°C اور نمی ${moisture}% ہے۔ [اقدام] گندم کیلئے موجودہ نمی مناسب ہے، معمول کے مطابق آبپاشی اور جڑی بوٹیوں کی تلفی رکھیں۔`;
+      englishExp = `Wheat Crop Status: Temperature ${temp}°C and profile moisture ${moisture}%. Favorable tillering conditions; maintain regular field maintenance and scheduled watering.`;
+    } else if (cropLower.includes('cotton') || cropLower === 'cotton') {
+      romanUrdu = `[Kapas] Mausam mozoon hai: Temp ${temp}°C aur nami ${moisture}%. [ACTION] Kapas k keeray (whitefly) ki nigrani karein aur aabpashi waqt par dein.`;
+      sindhi = `[ڪپهه جو فصل] گرمي پد ${temp}°C ۽ نمي ${moisture}%. [عمل] فصل لاءِ نمي بهترين آهي. اڇي مکي ۽ سنڊي جي باقاعده چڪاس جاري رکو.`;
+      urdu = `[کپاس کا کھیت] درجہ حرارت ${temp}°C اور نمی ${moisture}% ہے۔ [اقدام] نمی موزوں ہے۔ سفید مکھی اور گلابی سنڈی کا معائنہ رکھیں اور معمول کے مطابق پانی دیں۔`;
+      englishExp = `Cotton Crop Status: Baseline ${temp}°C with ${moisture}% profile moisture. Continue vegetative stage scouting for whitefly and bollworm.`;
+    } else if (cropLower.includes('sugarcane')) {
+      romanUrdu = `[Kamad] Mausam mozoon hai: Temp ${temp}°C aur nami ${moisture}%. [ACTION] Kamad k liye mamool k mutabiq aabpashi aur khad ka tawazun barqarar rakhain.`;
+      sindhi = `[ڪمند جو فصل] گرمي پد ${temp}°C ۽ نمي ${moisture}%. [عمل] ڪمند لاءِ پاڻي جي کوٽ ناهي، ترقي پسند واڌ ويجهه لاءِ معمول مطابق سنڀال رکو.`;
+      urdu = `[کماد کا کھیت] درجہ حرارت ${temp}°C اور نمی ${moisture}% ہے۔ [اقدام] کماد کیلئے پانی اور نائٹروجن کھاد کا معمول کا توازن برقرار رکھیں۔`;
+      englishExp = `Sugarcane Crop Status: Temperature ${temp}°C, root moisture ${moisture}%. Healthy growth profile; maintain furrow irrigation.`;
+    } else {
+      // Default: Rice (Basmati / IRRI-6)
+      romanUrdu = `[Dhaan] Mausam mozoon hai: Darja-e-hararat ${temp}°C aur nami ${moisture}%. [ACTION] Dhaan mein pani ki satah barqarar rakhain aur keeray ki nigrani karein.`;
+      sindhi = `[سارين جو فصل] گرمي پد ${temp}°C ۽ نمي ${moisture}%. [عمل] ٻنيءَ ۾ نمي موزون آهي، سارين جي فصل ۾ پاڻي جي بيهڪ برقرار رکو ۽ جيتن جي نگراني ڪريو.`;
+      urdu = `[دھان کا کھیت] درجہ حرارت ${temp}°C اور نمی ${moisture}% ہے۔ [اقدام] دھان کیلئے نمی مناسب ہے۔ کھیت میں پانی کی سطح برقرار رکھیں اور کیڑوں کی جانچ کریں۔`;
+      englishExp = `Rice Crop Status: Optimal microclimate (${temp}°C, ${moisture}% profile moisture). Maintain target standing water depth and continue pest scouting.`;
+    }
   }
 
   return {

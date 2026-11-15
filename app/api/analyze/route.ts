@@ -16,9 +16,11 @@ export async function POST(request: Request) {
     const telemetry = await getFullTelemetry(lat, lng);
 
     // 2. Synthesize with AI Agronomist engine
-    const closestThreat = telemetry.eonetEvents.length > 0 
-      ? telemetry.eonetEvents[0].title 
-      : undefined;
+    // Only alert for a natural hazard if it is in the regional proximity of the farm (within 150 km)
+    const localThreatEvent = telemetry.eonetEvents.find(
+      (ev) => typeof ev.distanceKm === 'number' && ev.distanceKm <= 150
+    );
+    const closestThreat = localThreatEvent ? localThreatEvent.title : undefined;
 
     const advice = await generateAgronomistAdvice({
       temperatureC: telemetry.power.temperatureC,

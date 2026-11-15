@@ -32,11 +32,11 @@ import { runMlPredictionModel, MlPredictionResult } from '@/lib/ml-detector';
 import { FarmRecord } from '@/lib/supabase';
 
 const DADU_PRESETS = [
-  { name: 'Dadu Central', lat: 26.7341, lng: 67.7795, note: 'District Headquarters' },
-  { name: 'Johi Canal', lat: 26.6912, lng: 67.6144, note: 'Canal Irrigated Belt' },
-  { name: 'Mehar Plains', lat: 27.1812, lng: 67.8223, note: 'Rabi Wheat Sector' },
-  { name: 'Sehwan Basin', lat: 26.4258, lng: 67.8624, note: 'Indus River Floodplain' },
-  { name: 'KN Shah Plain', lat: 26.8920, lng: 67.8910, note: 'Rice Paddy Basin' },
+  { name: 'Dadu Central', lat: 26.7341, lng: 67.7795, crop: 'rice', note: 'District Headquarters' },
+  { name: 'Johi Canal', lat: 26.6912, lng: 67.6144, crop: 'rice', note: 'Canal Irrigated Belt' },
+  { name: 'Mehar Plains', lat: 27.1812, lng: 67.8223, crop: 'wheat', note: 'Rabi Wheat Sector' },
+  { name: 'Sehwan Basin', lat: 26.4258, lng: 67.8624, crop: 'cotton', note: 'Indus River Floodplain' },
+  { name: 'KN Shah Plain', lat: 26.8920, lng: 67.8910, crop: 'wheat', note: 'Rice & Wheat Basin' },
 ];
 
 export default function FieldAgentPwaPage() {
@@ -111,7 +111,8 @@ export default function FieldAgentPwaPage() {
       if (preset) {
         setLat(preset.lat);
         setLng(preset.lng);
-        fetchTelemetry(preset.lat, preset.lng, crop);
+        setCrop(preset.crop);
+        fetchTelemetry(preset.lat, preset.lng, preset.crop);
       }
     } else if (val.startsWith('farm-')) {
       const fId = val.replace('farm-', '');
@@ -124,6 +125,8 @@ export default function FieldAgentPwaPage() {
           ? 'wheat'
           : farm.crop_type?.toLowerCase().includes('cotton')
           ? 'cotton'
+          : farm.crop_type?.toLowerCase().includes('sugarcane')
+          ? 'sugarcane'
           : 'rice';
         setCrop(cropLower);
         fetchTelemetry(farm.latitude, farm.longitude, cropLower);
@@ -139,6 +142,7 @@ export default function FieldAgentPwaPage() {
           const newLng = Number(pos.coords.longitude.toFixed(4));
           setLat(newLat);
           setLng(newLng);
+          setSelectedOutpostKey('custom-gps');
           fetchTelemetry(newLat, newLng, crop);
         },
         () => {
@@ -148,10 +152,12 @@ export default function FieldAgentPwaPage() {
     }
   };
 
-  const handleSelectPreset = (pLat: number, pLng: number) => {
-    setLat(pLat);
-    setLng(pLng);
-    fetchTelemetry(pLat, pLng, crop);
+  const handleSelectPreset = (preset: typeof DADU_PRESETS[0]) => {
+    setLat(preset.lat);
+    setLng(preset.lng);
+    setCrop(preset.crop);
+    setSelectedOutpostKey(`preset-${preset.name}`);
+    fetchTelemetry(preset.lat, preset.lng, preset.crop);
   };
 
   const handleSendEmailAlert = async () => {
@@ -332,7 +338,7 @@ export default function FieldAgentPwaPage() {
                   return (
                     <button
                       key={p.name}
-                      onClick={() => handleSelectPreset(p.lat, p.lng)}
+                      onClick={() => handleSelectPreset(p)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                         isSelected
                           ? 'bg-slate-950 text-white border-slate-950 shadow-xs'
