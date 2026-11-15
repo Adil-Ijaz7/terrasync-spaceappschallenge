@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { FarmRecord } from '@/lib/supabase';
+import { getLocalFarms, saveLocalFarm, mergeServerAndLocalFarms } from '@/lib/farmStore';
 import Link from 'next/link';
 
 // Dynamically import MapComponent to disable SSR for Leaflet
@@ -47,14 +48,22 @@ export default function FarmsPage() {
 
   const loadFarms = useCallback(async () => {
     setIsLoading(true);
+    // Instant optimistic hydrate from localStorage
+    const local = getLocalFarms();
+    if (local.length > 0) {
+      setFarms((prev) => mergeServerAndLocalFarms(prev.length > 0 ? prev : local));
+    }
+
     try {
       const res = await fetch('/api/farms', { cache: 'no-store' });
       const data = await res.json();
-      if (data.farms && Array.isArray(data.farms)) {
-        setFarms(data.farms);
-      }
+      const serverFarms = data.farms && Array.isArray(data.farms) ? data.farms : [];
+      setFarms(mergeServerAndLocalFarms(serverFarms));
     } catch (e) {
-      console.warn('Failed to load farms:', e);
+      console.warn('Failed to load farms from API:', e);
+      if (local.length > 0) {
+        setFarms(local);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +71,9 @@ export default function FarmsPage() {
 
   useEffect(() => {
     loadFarms();
+    const handleUpdate = () => loadFarms();
+    window.addEventListener('terrasync_farms_updated', handleUpdate);
+    return () => window.removeEventListener('terrasync_farms_updated', handleUpdate);
   }, [loadFarms]);
 
   const handleAddFarm = async (e: React.FormEvent) => {
@@ -69,43 +81,64 @@ export default function FarmsPage() {
     setIsSubmitting(true);
     setNotification(null);
 
+    const lat = parseFloat(formData.latitude) || 26.7341;
+    const lng = parseFloat(formData.longitude) || 67.7795;
+    const cleanEmail =
+      formData.email.trim() ||
+      `${formData.farmer_name.toLowerCase().replace(/[^a-z0-9]/g, '')}@dadu.farmer.pk`;
+
+    // Optimistically create farm record
+    const optimisticFarm: FarmRecord = {
+      id: 'farm-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      farmer_name: formData.farmer_name.trim(),
+      email: cleanEmail,
+      latitude: lat,
+      longitude: lng,
+      region: formData.region || 'Dadu Central',
+      crop_type: formData.crop_type || 'Rice (Basmati)',
+      created_at: new Date().toISOString(),
+    };
+
+    // Save to localStorage immediately so it persists across reloads on Vercel
+    saveLocalFarm(optimisticFarm);
+    setFarms((prev) => [optimisticFarm, ...prev.filter((f) => f.id !== optimisticFarm.id)]);
+
     try {
       const res = await fetch('/api/farms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          farmer_name: formData.farmer_name,
-          email: formData.email,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          region: formData.region,
-          crop_type: formData.crop_type,
+          farmer_name: optimisticFarm.farmer_name,
+          email: optimisticFarm.email,
+          latitude: optimisticFarm.latitude,
+          longitude: optimisticFarm.longitude,
+          region: optimisticFarm.region,
+          crop_type: optimisticFarm.crop_type,
         }),
       });
 
       const data = await res.json();
-      if (res.ok && data.success) {
-        setNotification({
-          message: `Farm for ${formData.farmer_name} registered successfully! Added to orbital monitoring.`,
-          type: 'success',
-        });
-        setShowAddForm(false);
-        setFormData({
-          farmer_name: '',
-          email: '',
-          latitude: '26.7341',
-          longitude: '67.7795',
-          region: 'Dadu Central',
-          crop_type: 'Rice (Basmati)',
-        });
-        await loadFarms();
-      } else {
-        setNotification({ message: data.error || 'Failed to register farm', type: 'error' });
+      if (res.ok && data.success && data.farm) {
+        saveLocalFarm(data.farm);
       }
     } catch (err: any) {
-      setNotification({ message: err.message, type: 'error' });
+      console.warn('Backend sync warning (persisted locally):', err);
     } finally {
+      setNotification({
+        message: `Farm for ${formData.farmer_name} registered successfully! Added to orbital monitoring & map radar.`,
+        type: 'success',
+      });
+      setShowAddForm(false);
+      setFormData({
+        farmer_name: '',
+        email: '',
+        latitude: '26.7341',
+        longitude: '67.7795',
+        region: 'Dadu Central',
+        crop_type: 'Rice (Basmati)',
+      });
       setIsSubmitting(false);
+      loadFarms();
     }
   };
 

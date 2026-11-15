@@ -30,6 +30,7 @@ import { AgronomistOutput } from '@/lib/agronomist';
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { runMlPredictionModel, MlPredictionResult } from '@/lib/ml-detector';
 import { FarmRecord } from '@/lib/supabase';
+import { getLocalFarms, mergeServerAndLocalFarms } from '@/lib/farmStore';
 
 const DADU_PRESETS = [
   { name: 'Dadu Central', lat: 26.7341, lng: 67.7795, crop: 'rice', note: 'District Headquarters' },
@@ -90,15 +91,28 @@ export default function FieldAgentPwaPage() {
   useEffect(() => {
     fetchTelemetry(lat, lng, crop);
 
-    // Load registered outposts for the dropdown
+    // Load registered outposts for the dropdown (merging local and server)
+    const local = getLocalFarms();
+    if (local.length > 0) {
+      setRegisteredFarms(mergeServerAndLocalFarms([]));
+    }
+
     fetch('/api/farms', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        if (data.farms && Array.isArray(data.farms)) {
-          setRegisteredFarms(data.farms);
-        }
+        const serverFarms = data.farms && Array.isArray(data.farms) ? data.farms : [];
+        setRegisteredFarms(mergeServerAndLocalFarms(serverFarms));
       })
-      .catch((e) => console.warn('Could not load farms in field agent:', e));
+      .catch((e) => {
+        console.warn('Could not load farms in field agent:', e);
+        if (local.length > 0) setRegisteredFarms(local);
+      });
+
+    const handleUpdate = () => {
+      setRegisteredFarms(mergeServerAndLocalFarms([]));
+    };
+    window.addEventListener('terrasync_farms_updated', handleUpdate);
+    return () => window.removeEventListener('terrasync_farms_updated', handleUpdate);
   }, []);
 
   const handleOutpostSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

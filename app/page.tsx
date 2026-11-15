@@ -25,6 +25,7 @@ import {
 import { NasaTelemetrySnapshot } from '@/lib/nasa';
 import { AgronomistOutput } from '@/lib/agronomist';
 import { FarmRecord } from '@/lib/supabase';
+import { getLocalFarms, saveLocalFarm, mergeServerAndLocalFarms } from '@/lib/farmStore';
 import { runMlDetectiveModel } from '@/lib/ml-detector';
 
 // Dynamically import MapComponent to disable SSR for Leaflet
@@ -83,21 +84,32 @@ export default function EarthDetectiveDashboard() {
   const [newFarmEmail, setNewFarmEmail] = useState('');
   const [newFarmCrop, setNewFarmCrop] = useState('Rice');
 
-  // Load registered farms from API (fresh without caching)
+  // Load registered farms (merging server API with local storage persistence)
   const loadFarms = useCallback(async () => {
+    // Immediate hydrate from localStorage
+    const local = getLocalFarms();
+    if (local.length > 0) {
+      setFarms((prev) => mergeServerAndLocalFarms(prev.length > 0 ? prev : local));
+    }
+
     try {
       const res = await fetch('/api/farms', { cache: 'no-store' });
       const data = await res.json();
-      if (data.farms && Array.isArray(data.farms)) {
-        setFarms(data.farms);
-      }
+      const serverFarms = data.farms && Array.isArray(data.farms) ? data.farms : [];
+      setFarms(mergeServerAndLocalFarms(serverFarms));
     } catch (err) {
-      console.warn('Could not fetch farms:', err);
+      console.warn('Could not fetch farms from API:', err);
+      if (local.length > 0) {
+        setFarms(local);
+      }
     }
   }, []);
 
   useEffect(() => {
     loadFarms();
+    const handleSync = () => loadFarms();
+    window.addEventListener('terrasync_farms_updated', handleSync);
+    return () => window.removeEventListener('terrasync_farms_updated', handleSync);
   }, [loadFarms]);
 
   // Fetch live NASA telemetry & agronomic advice
@@ -184,10 +196,12 @@ export default function EarthDetectiveDashboard() {
       const matchSearch =
         searchQuery === '' ||
         f.farmer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.region.toLowerCase().includes(searchQuery.toLowerCase());
+        f.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (f.crop_type && f.crop_type.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchCrop =
         cropFilter === 'all' ||
-        (f.crop_type && f.crop_type.toLowerCase().includes(cropFilter.toLowerCase()));
+        !f.crop_type ||
+        f.crop_type.toLowerCase().includes(cropFilter.toLowerCase());
       return matchSearch && matchCrop;
     });
   }, [farms, searchQuery, cropFilter]);
@@ -277,29 +291,51 @@ export default function EarthDetectiveDashboard() {
   // Add new farm outpost handler
   const handleCreateFarm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFarmName || !newFarmEmail) return;
+    if (!newFarmName.trim()) return;
+
+    const cleanEmail =
+      newFarmEmail.trim() ||
+      `${newFarmName.toLowerCase().replace(/[^a-z0-9]/g, '')}@dadu.farmer.pk`;
+
+    const optimisticFarm: FarmRecord = {
+      id: 'farm-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      farmer_name: newFarmName.trim(),
+      email: cleanEmail,
+      latitude: selectedLat,
+      longitude: selectedLng,
+      region: selectedSectorName || 'Dadu Outpost',
+      crop_type: newFarmCrop || 'Rice (Basmati)',
+      created_at: new Date().toISOString(),
+    };
+
+    // Save locally immediately to guarantee persistence
+    saveLocalFarm(optimisticFarm);
+    setFarms((prev) => [optimisticFarm, ...prev.filter((f) => f.id !== optimisticFarm.id)]);
+    setShowAddFarmModal(false);
+    setNewFarmName('');
+    setNewFarmEmail('');
 
     try {
       const res = await fetch('/api/farms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          farmer_name: newFarmName,
-          email: newFarmEmail,
-          latitude: selectedLat,
-          longitude: selectedLng,
-          region: selectedSectorName || 'Dadu Outpost',
-          crop_type: newFarmCrop,
+          farmer_name: optimisticFarm.farmer_name,
+          email: optimisticFarm.email,
+          latitude: optimisticFarm.latitude,
+          longitude: optimisticFarm.longitude,
+          region: optimisticFarm.region,
+          crop_type: optimisticFarm.crop_type,
         }),
       });
-      if (res.ok) {
-        await loadFarms();
-        setShowAddFarmModal(false);
-        setNewFarmName('');
-        setNewFarmEmail('');
+      const data = await res.json();
+      if (res.ok && data.success && data.farm) {
+        saveLocalFarm(data.farm);
       }
     } catch (err) {
-      console.error('Failed to create farm:', err);
+      console.warn('Backend sync warning (persisted locally):', err);
+    } finally {
+      loadFarms();
     }
   };
 
@@ -361,6 +397,17 @@ export default function EarthDetectiveDashboard() {
                 : `District Dadu (${selectedSectorName})`}
             </span>
           </div>
+
+          {/* Quick Register Outpost Button */}
+          <button
+            onClick={() => setShowAddFarmModal(true)}
+            className="flex items-center gap-1.5 h-10 px-3.5 bg-slate-950 hover:bg-slate-800 text-white rounded-full text-xs font-semibold shadow-2xs transition-all cursor-pointer group active:scale-95 shrink-0"
+            title="Register farm outpost at currently selected coordinates"
+          >
+            <Plus className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-90 transition-transform" />
+            <span className="hidden sm:inline">Register Outpost</span>
+            <span className="sm:hidden">Register</span>
+          </button>
 
           {/* Quick Preset Sector Chips */}
           <div className="hidden lg:flex items-center gap-1.5 ml-auto">

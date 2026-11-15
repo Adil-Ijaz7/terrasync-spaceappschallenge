@@ -39,6 +39,26 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
 // Initial pre-seeded mock farms in Dadu District, Sindh with verified email registries
 const DEFAULT_FARMS: FarmRecord[] = [
   {
+    id: 'farm-faizan-001',
+    farmer_name: 'Faizan Ali',
+    email: 'adilijaz.education@gmail.com',
+    latitude: 26.8964,
+    longitude: 67.6099,
+    region: 'Dadu Central',
+    crop_type: 'Wheat (Rabi)',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'farm-adil-000',
+    farmer_name: 'Adil Ijaz',
+    email: 'adilijaz227@gmail.com',
+    latitude: 26.6956,
+    longitude: 67.7012,
+    region: 'Dadu Central',
+    crop_type: 'Rice (Basmati)',
+    created_at: new Date().toISOString(),
+  },
+  {
     id: 'f1-dadu-001',
     farmer_name: 'Ghulam Rasool Brohi',
     email: 'ghulam.rasool.brohi@sindhfarms.pk',
@@ -94,18 +114,26 @@ const DEFAULT_FARMS: FarmRecord[] = [
 let memoryFarms: FarmRecord[] = [...DEFAULT_FARMS];
 let memoryAlerts: AlertRecord[] = [];
 
-// Safe file-backed persistence for local / non-Supabase mode
+// Safe file-backed persistence supporting both local dev and serverless (/tmp on Vercel)
 function getPersistentFarms(): FarmRecord[] {
   if (typeof window === 'undefined') {
     try {
       const fs = require('fs');
       const path = require('path');
-      const filePath = path.join(process.cwd(), 'lib', 'farms-storage.json');
-      if (fs.existsSync(filePath)) {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        if (Array.isArray(data) && data.length > 0) return data;
-      } else {
-        fs.writeFileSync(filePath, JSON.stringify(DEFAULT_FARMS, null, 2), 'utf-8');
+      const os = require('os');
+
+      // 1. Check serverless /tmp first (persists across warm lambda calls on Vercel)
+      const tmpPath = path.join(os.tmpdir(), 'terrasync-farms.json');
+      if (fs.existsSync(tmpPath)) {
+        const tmpData = JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
+        if (Array.isArray(tmpData) && tmpData.length > 0) return tmpData;
+      }
+
+      // 2. Check local project file
+      const localPath = path.join(process.cwd(), 'lib', 'farms-storage.json');
+      if (fs.existsSync(localPath)) {
+        const localData = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
+        if (Array.isArray(localData) && localData.length > 0) return localData;
       }
     } catch (e) {
       // fallback to memoryFarms
@@ -115,25 +143,51 @@ function getPersistentFarms(): FarmRecord[] {
 }
 
 function savePersistentFarm(newFarm: FarmRecord) {
-  memoryFarms.unshift(newFarm);
+  // Update memory state
+  const existingIdx = memoryFarms.findIndex((f) => f.id === newFarm.id);
+  if (existingIdx >= 0) {
+    memoryFarms[existingIdx] = newFarm;
+  } else {
+    memoryFarms.unshift(newFarm);
+  }
+
   if (typeof window === 'undefined') {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+
+    // Attempt 1: Write to /tmp (guaranteed writable on Vercel / AWS Lambda)
     try {
-      const fs = require('fs');
-      const path = require('path');
-      const filePath = path.join(process.cwd(), 'lib', 'farms-storage.json');
+      const tmpPath = path.join(os.tmpdir(), 'terrasync-farms.json');
+      let list: FarmRecord[] = [];
+      if (fs.existsSync(tmpPath)) {
+        list = JSON.parse(fs.readFileSync(tmpPath, 'utf-8'));
+      } else {
+        list = [...memoryFarms];
+      }
+      if (!list.some((f) => f.id === newFarm.id)) {
+        list.unshift(newFarm);
+      }
+      fs.writeFileSync(tmpPath, JSON.stringify(list, null, 2), 'utf-8');
+    } catch (err) {
+      // ignore
+    }
+
+    // Attempt 2: Write to local lib/farms-storage.json (for local dev persistence)
+    try {
+      const localPath = path.join(process.cwd(), 'lib', 'farms-storage.json');
       let current: FarmRecord[] = [];
-      if (fs.existsSync(filePath)) {
-        current = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      if (fs.existsSync(localPath)) {
+        current = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
       } else {
         current = [...DEFAULT_FARMS];
       }
-      // Avoid duplicate by id
       if (!current.some((f) => f.id === newFarm.id)) {
         current.unshift(newFarm);
       }
-      fs.writeFileSync(filePath, JSON.stringify(current, null, 2), 'utf-8');
+      fs.writeFileSync(localPath, JSON.stringify(current, null, 2), 'utf-8');
     } catch (e) {
-      console.warn('Could not persist farm to disk:', e);
+      // In read-only serverless this will gracefully catch without failing the request
     }
   }
 }
@@ -174,7 +228,11 @@ export async function createFarm(farm: Omit<FarmRecord, 'id' | 'created_at'>): P
   if (supabase) {
     try {
       const { data, error } = await supabase.from('farms').insert([farm]).select().single();
-      if (!error && data) return data as FarmRecord;
+      if (!error && data) {
+        const saved = data as FarmRecord;
+        savePersistentFarm(saved);
+        return saved;
+      }
     } catch (e) {
       console.warn('Error saving farm to Supabase:', e);
     }
