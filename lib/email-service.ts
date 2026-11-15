@@ -153,21 +153,45 @@ export function generateAlertEmailHtml(payload: EmailAlertPayload): string {
         <!-- Main Email Container Matching Web App Aesthetic -->
         <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);">
           
-          <!-- Modern Slate & Emerald Top Bar -->
+          <!-- Clean White Header with Brand Logo Matching Web App -->
           <tr>
-            <td style="background-color: #0f172a; padding: 22px 26px;">
-              <table width="100%" role="presentation">
+            <td style="background-color: #ffffff; padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
+              <table width="100%" role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td>
-                    <div style="font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; line-height: 1;">
-                      Terra<span style="color: #34d399;">Sync</span>
-                    </div>
-                    <div style="margin-top: 4px; font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;">
-                      NASA Space Apps • Earth&apos;s True Detective
-                    </div>
+                  <td style="vertical-align: middle;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 12px;">
+                          <!-- TerraSync Brand Mark -->
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="background-color: #0f172a; width: 36px; height: 36px; border-radius: 10px; text-align: center;">
+                            <tr>
+                              <td align="center" valign="middle" style="height: 36px;">
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                  <tr>
+                                    <td style="padding: 1.5px;"><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background-color: #ffffff;"></span></td>
+                                    <td style="padding: 1.5px;"><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background-color: #ffffff;"></span></td>
+                                  </tr>
+                                  <tr>
+                                    <td colspan="2" align="center" style="padding: 1.5px;"><span style="display: block; width: 5px; height: 5px; border-radius: 50%; background-color: #34d399; margin: 0 auto;"></span></td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <div style="font-size: 20px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; line-height: 1.2;">
+                            Terra<span style="color: #059669;">Sync</span>
+                          </div>
+                          <div style="margin-top: 3px; font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;">
+                            NASA Space Apps &bull; Earth&apos;s True Detective
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td align="right">
-                    <span style="display: inline-block; background: ${badgeBg}; color: ${badgeText}; border: 1px solid ${badgeBorder}; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="display: inline-block; background: ${badgeBg}; color: ${badgeText}; border: 1px solid ${badgeBorder}; padding: 5px 14px; border-radius: 9999px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">
                       ${urgencyLevel} RISK
                     </span>
                   </td>
